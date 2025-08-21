@@ -43,10 +43,19 @@ export interface CallToolRequest {
 }
 
 export interface CallToolResponse {
-  content: Array<{
-    type: string;
-    text: string;
-  }>;
+  content: Array<
+    | {
+        type: 'text';
+        text: string;
+      }
+    | {
+        type: 'resource_link';
+        uri: string;
+        name?: string;
+        mimeType?: string;
+        description?: string;
+      }
+  >;
 }
 
 // Render Job Types

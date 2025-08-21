@@ -1,4 +1,4 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { McpServer, ResourceTemplate } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { logger } from './utils/logger.js';
@@ -28,9 +28,8 @@ class RemotionMCPServer {
     
     // Register capabilities and expose tools
     this.mcp.server.registerCapabilities({
-      tools: {
-        listChanged: true,
-      },
+      tools: { listChanged: true },
+      resources: { listChanged: true },
     });
 
     // Helper to register a tool that forwards to handler.callTool
@@ -114,6 +113,66 @@ class RemotionMCPServer {
       })
     );
 
+    // File-based tools
+    registerTool(
+      'get_render_output',
+      'Get completed render output file metadata for a job (file-based workflow)',
+      z.object({ jobId: z.string() })
+    );
+
+    // Resources: Expose rendered video files as resources (file-based)
+    // Static root for listing; dynamic per-file by URI
+    this.mcp.registerResource(
+      'rendered-video',
+      new ResourceTemplate('remotion-output://{filename}', { list: undefined }),
+      {
+        title: 'Rendered Video',
+        description: 'Rendered video output file',
+        mimeType: 'video/mp4',
+      },
+      async (uri, { filename }) => {
+        // Build absolute file path
+        const base = config.getRemotionOutputDir();
+        const filePath = `${base}/${filename}`;
+        const httpUrl = `http://localhost:${config.getStaticServerPort()}/${filename}`;
+        return {
+          contents: [
+            {
+              uri: httpUrl,
+              mimeType: 'video/mp4',
+              // Provide file path as fallback text
+              text: filePath,
+            },
+          ],
+        };
+      }
+    );
+
+    registerTool(
+      'list_render_outputs',
+      'List recent render output files (file-based workflow)',
+      z.object({ limit: z.number().optional() })
+    );
+
+    registerTool(
+      'delete_render_output',
+      'Delete a render output file by jobId or path',
+      z.object({ jobId: z.string().optional(), path: z.string().optional() })
+    );
+
+    registerTool(
+      'cleanup_render_outputs',
+      'Cleanup old render outputs older than N hours',
+      z.object({ olderThanHours: z.number().optional() })
+    );
+
+    // openVideo
+    registerTool(
+      'openVideo',
+      'Open a video file using the system default player',
+      z.object({ filePath: z.string() })
+    );
+
     console.error('Server setup completed');
     logger.info('Server setup completed');
   }
@@ -129,6 +188,33 @@ class RemotionMCPServer {
         version: '1.0.0',
         nodeEnv: config.isDevelopment() ? 'development' : 'production',
         logLevel: config.getLogLevel(),
+      });
+
+      // Optionally start a minimal static file server to serve output videos over HTTP (for clients that prefer HTTP links)
+      const http = await import('http');
+      const fs = await import('fs');
+      const path = await import('path');
+      const staticPort = config.getStaticServerPort();
+      const outputDir = config.getRemotionOutputDir();
+
+      const staticServer = (http as any).createServer((req: any, res: any) => {
+        try {
+          const url = new URL(req.url || '/', 'http://localhost');
+          const pathname = decodeURIComponent(url.pathname);
+          // Serve only files inside outputDir
+          const safePath = (path as any).normalize((path as any).join(outputDir, pathname.replace(/^\/+/, '')));
+          if (!safePath.startsWith(outputDir)) {
+            res.statusCode = 403; res.end('Forbidden'); return;
+          }
+          (fs as any).createReadStream(safePath)
+            .on('error', () => { res.statusCode = 404; res.end('Not Found'); })
+            .pipe(res);
+        } catch {
+          res.statusCode = 500; res.end('Server Error');
+        }
+      });
+      staticServer.listen(staticPort, () => {
+        logger.info(`Static server listening on http://localhost:${staticPort}`);
       });
 
       // Create transport
@@ -183,4 +269,4 @@ if (process.argv[1] && process.argv[1].endsWith('server.js')) {
   });
 }
 
-export { RemotionMCPServer };
+export { RemotionMCPServer, MCPHandler };

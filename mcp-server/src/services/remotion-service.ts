@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger';
 import { ErrorHandler } from '../utils/error-handler';
+import { config } from '../utils/config';
 
 export interface Composition {
   id: string;
@@ -27,7 +28,7 @@ export class RemotionService {
   private readonly remotionPath: string;
 
   constructor(projectPath?: string) {
-    this.projectPath = projectPath || process.cwd();
+    this.projectPath = projectPath || config.getRemotionProjectPath();
     this.remotionPath = path.resolve(this.projectPath, 'src');
   }
 

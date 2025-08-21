@@ -10,16 +10,19 @@ import { logger } from '../utils/logger';
 import { ErrorHandler } from '../utils/error-handler';
 import { RemotionService } from '../services/remotion-service';
 import { RenderService } from '../services/render-service';
+import { SystemService } from '../services/system-service';
 
 export class MCPHandler {
   private readonly tools: Tool[];
   private readonly remotionService: RemotionService;
   private readonly renderService: RenderService;
+  private readonly systemService: SystemService;
 
   constructor() {
     this.tools = this.initializeTools();
     this.remotionService = new RemotionService();
     this.renderService = new RenderService();
+    this.systemService = new SystemService();
   }
 
   private initializeTools(): Tool[] {
@@ -95,6 +98,137 @@ export class MCPHandler {
             },
           },
           required: [],
+        },
+      },
+      {
+        name: 'get_render_output',
+        description: 'Get completed render output file metadata for a job (file-based workflow)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            jobId: {
+              type: 'string',
+              description: 'ID of the completed render job',
+            },
+          },
+          required: ['jobId'],
+        },
+      },
+      {
+        name: 'list_render_outputs',
+        description: 'List recent render output files (file-based workflow)',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            limit: {
+              type: 'number',
+              description: 'Maximum number of outputs to return',
+            },
+          },
+          required: [],
+        },
+      },
+      {
+        name: 'delete_render_output',
+        description: 'Delete a render output file by jobId or path',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            jobId: { type: 'string', description: 'Render job ID' },
+            path: { type: 'string', description: 'Absolute file path' },
+          },
+          required: [],
+        },
+      },
+      {
+        name: 'cleanup_render_outputs',
+        description: 'Cleanup old render outputs older than N hours',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            olderThanHours: { type: 'number', description: 'Threshold in hours (default 24)' },
+          },
+          required: [],
+        },
+      },
+      {
+        name: 'openVideo',
+        description: 'Open a video file using the system default player',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            filePath: { type: 'string', description: 'Absolute or relative path to video file' },
+          },
+          required: ['filePath'],
+        },
+      },
+      {
+        name: 'create_video_stream',
+        description: 'Create a video stream from a completed render job',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            jobId: {
+              type: 'string',
+              description: 'ID of the completed render job',
+            },
+          },
+          required: ['jobId'],
+        },
+      },
+      {
+        name: 'get_video_stream_info',
+        description: 'Get information about a video stream',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            streamId: {
+              type: 'string',
+              description: 'ID of the video stream',
+            },
+          },
+          required: ['streamId'],
+        },
+      },
+      {
+        name: 'stream_video_chunk',
+        description: 'Stream a chunk of video data',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            streamId: {
+              type: 'string',
+              description: 'ID of the video stream',
+            },
+            offset: {
+              type: 'number',
+              description: 'Byte offset to start streaming from (default: 0)',
+            },
+          },
+          required: ['streamId'],
+        },
+      },
+      {
+        name: 'list_video_streams',
+        description: 'List all active video streams',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+          required: [],
+        },
+      },
+      {
+        name: 'cancel_video_stream',
+        description: 'Cancel an active video stream',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            streamId: {
+              type: 'string',
+              description: 'ID of the video stream to cancel',
+            },
+          },
+          required: ['streamId'],
         },
       },
       {
@@ -189,8 +323,38 @@ export class MCPHandler {
         case 'list_render_jobs':
           response = await this.handleListRenderJobs(request.arguments);
           break;
+        case 'get_render_output':
+          response = await this.handleGetRenderOutput(request.arguments);
+          break;
+        case 'list_render_outputs':
+          response = await this.handleListRenderOutputs(request.arguments);
+          break;
+        case 'delete_render_output':
+          response = await this.handleDeleteRenderOutput(request.arguments);
+          break;
+        case 'cleanup_render_outputs':
+          response = await this.handleCleanupRenderOutputs(request.arguments);
+          break;
+        case 'openVideo':
+          response = await this.handleOpenVideo(request.arguments);
+          break;
         case 'cancel_render':
           response = await this.handleCancelRender(request.arguments);
+          break;
+        case 'create_video_stream':
+          response = await this.handleCreateVideoStream(request.arguments);
+          break;
+        case 'get_video_stream_info':
+          response = await this.handleGetVideoStreamInfo(request.arguments);
+          break;
+        case 'stream_video_chunk':
+          response = await this.handleStreamVideoChunk(request.arguments);
+          break;
+        case 'list_video_streams':
+          response = await this.handleListVideoStreams(request.arguments);
+          break;
+        case 'cancel_video_stream':
+          response = await this.handleCancelVideoStream(request.arguments);
           break;
         default:
           throw ErrorHandler.createProcessingError(
@@ -512,6 +676,131 @@ export class MCPHandler {
     }
   }
 
+  // File-based handlers
+
+  private async handleGetRenderOutput(arguments_: Record<string, unknown>): Promise<CallToolResponse> {
+    try {
+      const jobId = arguments_.jobId as string;
+      const output = await this.renderService.getRenderOutput(jobId);
+      if (!output) {
+        return {
+          content: [
+            { type: 'text', text: `❌ **No Output Found**\n\nJob '${jobId}' chưa hoàn thành hoặc không có output file.` }
+          ]
+        };
+      }
+
+      const sizeMB = Math.round((output.size / 1024 / 1024) * 100) / 100;
+      const httpUrl = `http://localhost:${config.getStaticServerPort()}/${output.filename}`;
+      const link = {
+        type: 'resource_link' as const,
+        uri: `remotion-output://${output.filename}`,
+        name: output.filename,
+        mimeType: output.contentType,
+        description: 'Rendered video output file'
+      };
+      const text = `📄 **Render Output**\n\n` +
+        `**Job ID:** ${output.jobId}\n` +
+        `**Filename:** ${output.filename}\n` +
+        `**Path:** ${output.path}\n` +
+        `**Size:** ${sizeMB} MB\n` +
+        `**Content Type:** ${output.contentType}\n` +
+        `**Created:** ${output.createdAt.toLocaleString()}\n` +
+        `**HTTP URL:** ${httpUrl}\n\n` +
+        `Use the resource link below to open the video (or the HTTP URL).`;
+
+      return { content: [{ type: 'text', text }, link] };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to get render output', { error: errorMessage, arguments_ });
+      return { content: [{ type: 'text', text: `❌ **Get Output Failed**\n\n${errorMessage}` }] };
+    }
+  }
+
+  private async handleListRenderOutputs(arguments_: Record<string, unknown>): Promise<CallToolResponse> {
+    try {
+      const limit = arguments_.limit as number | undefined;
+      const outputs = await this.renderService.listRenderOutputs(limit);
+
+      if (outputs.length === 0) {
+        return { content: [{ type: 'text', text: `📋 **No Render Outputs Found**` }] };
+      }
+
+      const list = outputs.map((o, i) => {
+        const sizeMB = Math.round((o.size / 1024 / 1024) * 100) / 100;
+        const jobIdText = o.jobId ? `\n- Job ID: ${o.jobId}` : '';
+        return `**${i + 1}. ${o.filename}**\n- Path: ${o.path}${jobIdText}\n- Size: ${sizeMB} MB\n- Type: ${o.contentType}\n- Created: ${o.createdAt.toLocaleString()}`;
+      }).join('\n\n');
+
+      const links = outputs.map((o) => ({
+        type: 'resource_link' as const,
+        uri: `remotion-output://${o.filename}`,
+        name: o.filename,
+        mimeType: o.contentType,
+        description: 'Rendered video output file'
+      }));
+
+      return { content: [
+        { type: 'text', text: `📂 **Render Outputs** (${outputs.length}${limit ? ` of ${limit}` : ''})\n\n${list}` },
+        ...links
+      ] };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to list render outputs', { error: errorMessage, arguments_ });
+      return { content: [{ type: 'text', text: `❌ **List Outputs Failed**\n\n${errorMessage}` }] };
+    }
+  }
+
+  private async handleDeleteRenderOutput(arguments_: Record<string, unknown>): Promise<CallToolResponse> {
+    try {
+      const jobId = arguments_.jobId as string | undefined;
+      const path = arguments_.path as string | undefined;
+      const ok = await this.renderService.deleteRenderOutput({ jobId, path });
+      if (!ok) {
+        return { content: [{ type: 'text', text: `❌ **Delete Failed**\n\nKhông tìm thấy hoặc xóa không thành công.` }] };
+      }
+      return { content: [{ type: 'text', text: `🗑️ **Output Deleted**` }] };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to delete render output', { error: errorMessage, arguments_ });
+      return { content: [{ type: 'text', text: `❌ **Delete Failed**\n\n${errorMessage}` }] };
+    }
+  }
+
+  private async handleCleanupRenderOutputs(arguments_: Record<string, unknown>): Promise<CallToolResponse> {
+    try {
+      const olderThanHours = (arguments_.olderThanHours as number) ?? 24;
+      const deleted = await this.renderService.cleanupRenderOutputs(olderThanHours);
+      return { content: [{ type: 'text', text: `🧹 **Cleanup Completed**\n\nDeleted: ${deleted} files (older than ${olderThanHours}h)` }] };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to cleanup render outputs', { error: errorMessage, arguments_ });
+      return { content: [{ type: 'text', text: `❌ **Cleanup Failed**\n\n${errorMessage}` }] };
+    }
+  }
+
+  private async handleOpenVideo(arguments_: Record<string, unknown>): Promise<CallToolResponse> {
+    try {
+      const filePath = arguments_.filePath as string;
+      ErrorHandler.validateString(filePath, 'filePath', 'openVideo');
+
+      const result = await this.systemService.openFileWithDefaultApp(filePath);
+
+      if (!result.success) {
+        return {
+          content: [{ type: 'text', text: `❌ **Open Video Failed**\n\n${result.message}` }],
+        };
+      }
+
+      return {
+        content: [{ type: 'text', text: `✅ **Video opened**\n\nPath: ${result.resolvedPath}` }],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to open video', { error: errorMessage, arguments_ });
+      return { content: [{ type: 'text', text: `❌ **Open Video Failed**\n\n${errorMessage}` }] };
+    }
+  }
   private async handleCancelRender(arguments_: Record<string, unknown>): Promise<CallToolResponse> {
     try {
       const jobId = arguments_.jobId as string;
@@ -540,6 +829,227 @@ export class MCPHandler {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to cancel render', { error: errorMessage });
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ **Cancel Failed**\n\n${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  // Video Streaming Handlers
+
+  private async handleCreateVideoStream(arguments_: Record<string, unknown>): Promise<CallToolResponse> {
+    try {
+      const jobId = arguments_.jobId as string;
+
+      const stream = await this.renderService.createVideoStream(jobId);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `🎥 **Video Stream Created**\n\n**Stream ID:** ${stream.id}\n**Job ID:** ${stream.jobId}\n**Status:** ${stream.status}\n**Content Type:** ${stream.contentType}\n**Total Size:** ${Math.round(stream.totalBytes / 1024 / 1024 * 100) / 100} MB\n\nUse 'get_video_stream_info' with stream ID to get stream details.\nUse 'stream_video_chunk' to start streaming video data.`,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to create video stream', { error: errorMessage });
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ **Video Stream Creation Failed**\n\n${errorMessage}\n\nMake sure the render job is completed and has an output file.`,
+          },
+        ],
+      };
+    }
+  }
+
+  private async handleGetVideoStreamInfo(arguments_: Record<string, unknown>): Promise<CallToolResponse> {
+    try {
+      const streamId = arguments_.streamId as string;
+
+      const stream = await this.renderService.getVideoStreamInfo(streamId);
+      if (!stream) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❌ **Video Stream Not Found**\n\nStream ID '${streamId}' does not exist.\n\nUse 'list_video_streams' to see all available streams.`,
+            },
+          ],
+        };
+      }
+
+      const statusEmoji = {
+        preparing: '⏳',
+        streaming: '🎥',
+        completed: '✅',
+        error: '❌'
+      }[stream.status] || '❓';
+
+      const progress = Math.round((stream.streamedBytes / stream.totalBytes) * 100);
+      const sizeMB = Math.round(stream.totalBytes / 1024 / 1024 * 100) / 100;
+
+      let statusText = `${statusEmoji} **Video Stream Status: ${stream.status.toUpperCase()}**\n\n`;
+      statusText += `**Stream ID:** ${stream.id}\n`;
+      statusText += `**Job ID:** ${stream.jobId}\n`;
+      statusText += `**Progress:** ${progress}% (${stream.streamedBytes} / ${stream.totalBytes} bytes)\n`;
+      statusText += `**File Size:** ${sizeMB} MB\n`;
+      statusText += `**Content Type:** ${stream.contentType}\n`;
+      statusText += `**Started:** ${stream.startTime.toLocaleString()}\n`;
+
+      if (stream.endTime) {
+        statusText += `**Completed:** ${stream.endTime.toLocaleString()}\n`;
+      }
+
+      if (stream.error) {
+        statusText += `\n**Error:** ${stream.error}\n`;
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: statusText,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to get video stream info', { error: errorMessage });
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ **Failed to Get Stream Info**\n\n${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  private async handleStreamVideoChunk(arguments_: Record<string, unknown>): Promise<CallToolResponse> {
+    try {
+      const streamId = arguments_.streamId as string;
+      const offset = (arguments_.offset as number) || 0;
+
+      const chunk = await this.renderService.streamVideoChunk(streamId, offset);
+
+      const chunkSizeKB = Math.round(chunk.chunk.length / 1024 * 100) / 100;
+      const progress = Math.round((chunk.offset / chunk.total) * 100);
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `🎥 **Video Chunk Streamed**\n\n**Stream ID:** ${streamId}\n**Chunk Size:** ${chunkSizeKB} KB\n**Offset:** ${chunk.offset} / ${chunk.total} bytes\n**Progress:** ${progress}%\n**Is Last Chunk:** ${chunk.isLast ? 'Yes' : 'No'}\n\nVideo data is ready for transmission to client.`,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to stream video chunk', { error: errorMessage });
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ **Video Streaming Failed**\n\n${errorMessage}\n\nMake sure the stream is active and the offset is valid.`,
+          },
+        ],
+      };
+    }
+  }
+
+  private async handleListVideoStreams(arguments_: Record<string, unknown>): Promise<CallToolResponse> {
+    try {
+      const streams = await this.renderService.listVideoStreams();
+
+      if (streams.length === 0) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `📋 **No Video Streams Found**\n\nNo video streams have been created yet.\n\nUse 'create_video_stream' with a completed render job to start streaming.`,
+            },
+          ],
+        };
+      }
+
+      const streamsList = streams.map((stream, index) => {
+        const statusEmoji = {
+          preparing: '⏳',
+          streaming: '🎥',
+          completed: '✅',
+          error: '❌'
+        }[stream.status] || '❓';
+
+        const progress = Math.round((stream.streamedBytes / stream.totalBytes) * 100);
+        const sizeMB = Math.round(stream.totalBytes / 1024 / 1024 * 100) / 100;
+
+        return `**${index + 1}. Stream ${stream.id}** ${statusEmoji}\n- Job ID: ${stream.jobId}\n- Status: ${stream.status} (${progress}%)\n- Size: ${sizeMB} MB\n- Started: ${stream.startTime.toLocaleString()}`;
+      }).join('\n\n');
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `🎥 **Video Streams** (${streams.length} total)\n\n${streamsList}\n\nUse 'get_video_stream_info' with stream ID for detailed status.`,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to list video streams', { error: errorMessage });
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `❌ **Failed to List Streams**\n\n${errorMessage}`,
+          },
+        ],
+      };
+    }
+  }
+
+  private async handleCancelVideoStream(arguments_: Record<string, unknown>): Promise<CallToolResponse> {
+    try {
+      const streamId = arguments_.streamId as string;
+
+      const success = await this.renderService.cancelVideoStream(streamId);
+      
+      if (!success) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `❌ **Cancel Failed**\n\nStream ID '${streamId}' not found or cannot be cancelled (already completed/error).\n\nUse 'list_video_streams' to see available streams.`,
+            },
+          ],
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `🚫 **Video Stream Cancelled**\n\nStream ID '${streamId}' has been successfully cancelled.\n\nUse 'get_video_stream_info' to confirm the cancellation.`,
+          },
+        ],
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to cancel video stream', { error: errorMessage });
       
       return {
         content: [

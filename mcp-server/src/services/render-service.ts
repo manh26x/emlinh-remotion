@@ -5,6 +5,8 @@ import path from 'path';
 import { logger } from '../utils/logger';
 import { ErrorHandler } from '../utils/error-handler';
 import { RemotionService } from './remotion-service';
+import { VideoStreamingService } from './video-streaming-service';
+import { config } from '../utils/config';
 
 export interface RenderJob {
   id: string;
@@ -44,11 +46,13 @@ export class RenderService {
   private jobs: Map<string, RenderJob> = new Map();
   private activeProcesses: Map<string, ChildProcess> = new Map();
   private readonly remotionService: RemotionService;
+  private readonly videoStreamingService: VideoStreamingService;
   private readonly outputDir: string;
 
   constructor(projectPath?: string, outputDir?: string) {
     this.remotionService = new RemotionService(projectPath);
-    this.outputDir = outputDir || './output';
+    this.videoStreamingService = new VideoStreamingService();
+    this.outputDir = outputDir || config.getRemotionOutputDir();
   }
 
   /**
@@ -176,6 +180,237 @@ export class RenderService {
   }
 
   /**
+   * Lấy thông tin output file của một render job (file-based workflow)
+   */
+  public async getRenderOutput(jobId: string): Promise<{
+    jobId: string;
+    path: string;
+    size: number;
+    contentType: string;
+    filename: string;
+    createdAt: Date;
+  } | null> {
+    const job = this.jobs.get(jobId);
+    if (!job || !job.outputPath || job.status !== 'completed') {
+      logger.warn('Render output not available', { jobId, status: job?.status });
+      return null;
+    }
+
+    try {
+      const stats = await fs.stat(job.outputPath);
+      return {
+        jobId,
+        path: job.outputPath,
+        size: stats.size,
+        contentType: this.getContentTypeByExtension(job.outputPath),
+        filename: path.basename(job.outputPath),
+        createdAt: stats.mtime
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to read render output metadata', { error: errorMessage, jobId, outputPath: job.outputPath });
+      return null;
+    }
+  }
+
+  /**
+   * Liệt kê các video file output đã render (ưu tiên theo memory jobs, fallback scan thư mục)
+   */
+  public async listRenderOutputs(limit?: number): Promise<Array<{
+    jobId?: string;
+    path: string;
+    size: number;
+    contentType: string;
+    filename: string;
+    createdAt: Date;
+  }>> {
+    const outputs: Array<{
+      jobId?: string;
+      path: string;
+      size: number;
+      contentType: string;
+      filename: string;
+      createdAt: Date;
+    }> = [];
+
+    // Từ in-memory jobs
+    for (const job of this.jobs.values()) {
+      if (job.status === 'completed' && job.outputPath) {
+        try {
+          const stats = await fs.stat(job.outputPath);
+          outputs.push({
+            jobId: job.id,
+            path: job.outputPath,
+            size: stats.size,
+            contentType: this.getContentTypeByExtension(job.outputPath),
+            filename: path.basename(job.outputPath),
+            createdAt: stats.mtime
+          });
+        } catch {
+          // Ignore files that no longer exist
+        }
+      }
+    }
+
+    // Scan thư mục output để thu thập các file có thể không thuộc in-memory jobs
+    try {
+      const dirents = await fs.readdir(this.outputDir, { withFileTypes: true });
+      for (const dirent of dirents) {
+        if (!dirent.isFile()) continue;
+        const filePath = path.join(this.outputDir, dirent.name);
+        const alreadyIncluded = outputs.some((o) => o.path === filePath);
+        if (alreadyIncluded) continue;
+
+        const stats = await fs.stat(filePath);
+        outputs.push({
+          path: filePath,
+          size: stats.size,
+          contentType: this.getContentTypeByExtension(filePath),
+          filename: dirent.name,
+          createdAt: stats.mtime
+        });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to scan output directory', { error: errorMessage, outputDir: this.outputDir });
+    }
+
+    // Sort by created time desc
+    outputs.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    if (limit && limit > 0) {
+      return outputs.slice(0, limit);
+    }
+    return outputs;
+  }
+
+  /**
+   * Xóa output file theo jobId hoặc path
+   */
+  public async deleteRenderOutput(params: { jobId?: string; path?: string }): Promise<boolean> {
+    try {
+      let targetPath = params.path;
+      if (!targetPath && params.jobId) {
+        const job = this.jobs.get(params.jobId);
+        targetPath = job?.outputPath;
+      }
+
+      if (!targetPath) {
+        logger.warn('No target path to delete');
+        return false;
+      }
+
+      await fs.unlink(targetPath);
+      logger.info('Deleted render output', { path: targetPath });
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to delete render output', { error: errorMessage, params });
+      return false;
+    }
+  }
+
+  /**
+   * Cleanup outputs cũ hơn N giờ
+   */
+  public async cleanupRenderOutputs(olderThanHours: number = 24): Promise<number> {
+    const cutoff = Date.now() - olderThanHours * 60 * 60 * 1000;
+    let deleted = 0;
+    try {
+      const dirents = await fs.readdir(this.outputDir, { withFileTypes: true });
+      for (const dirent of dirents) {
+        if (!dirent.isFile()) continue;
+        const filePath = path.join(this.outputDir, dirent.name);
+        try {
+          const stats = await fs.stat(filePath);
+          if (stats.mtime.getTime() < cutoff) {
+            await fs.unlink(filePath);
+            deleted++;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      if (deleted > 0) {
+        logger.info('Cleanup old render outputs completed', { olderThanHours, deleted });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to cleanup render outputs', { error: errorMessage, olderThanHours });
+    }
+    return deleted;
+  }
+
+  /**
+   * Tạo video stream từ render job
+   */
+  public async createVideoStream(jobId: string): Promise<any> {
+    try {
+      const job = this.jobs.get(jobId);
+      if (!job) {
+        throw ErrorHandler.createProcessingError(
+          'create_video_stream',
+          'job_not_found',
+          `Render job not found: ${jobId}`
+        );
+      }
+
+      if (job.status !== 'completed') {
+        throw ErrorHandler.createProcessingError(
+          'create_video_stream',
+          'job_not_completed',
+          `Render job is not completed: ${job.status}`
+        );
+      }
+
+      if (!job.outputPath) {
+        throw ErrorHandler.createProcessingError(
+          'create_video_stream',
+          'no_output_path',
+          `Render job has no output path: ${jobId}`
+        );
+      }
+
+      // Create video stream
+      const stream = await this.videoStreamingService.createVideoStream(jobId, job.outputPath);
+      
+      logger.info('Video stream created from render job', { jobId, streamId: stream.id });
+      return stream;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to create video stream from render job', { error: errorMessage, jobId });
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy video stream info
+   */
+  public async getVideoStreamInfo(streamId: string): Promise<any> {
+    return this.videoStreamingService.getStreamInfo(streamId);
+  }
+
+  /**
+   * Stream video chunk
+   */
+  public async streamVideoChunk(streamId: string, offset: number = 0): Promise<any> {
+    return this.videoStreamingService.streamVideoChunk(streamId, offset);
+  }
+
+  /**
+   * Lấy danh sách video streams
+   */
+  public async listVideoStreams(): Promise<any[]> {
+    return this.videoStreamingService.listStreams();
+  }
+
+  /**
+   * Cancel video stream
+   */
+  public async cancelVideoStream(streamId: string): Promise<boolean> {
+    return this.videoStreamingService.cancelStream(streamId);
+  }
+
+  /**
    * Xóa render jobs đã hoàn thành hoặc failed
    */
   public async cleanupCompletedJobs(olderThanHours: number = 24): Promise<number> {
@@ -221,7 +456,8 @@ export class RenderService {
       // Spawn render process
       const process = spawn('npm', ['run', 'render', '--', ...args], {
         stdio: ['pipe', 'pipe', 'pipe'],
-        shell: true
+        shell: true,
+        cwd: config.getRemotionProjectPath(),
       });
 
       this.activeProcesses.set(job.id, process);
@@ -315,38 +551,52 @@ export class RenderService {
   }
 
   private buildRenderCommand(job: RenderJob, outputPath: string): string[] {
-    const args = [
-      job.compositionId,
-      outputPath,
-      '--concurrency', String(job.parameters.concurrency || 1)
-    ];
+    const args: string[] = [job.compositionId, outputPath];
 
     if (job.parameters.width) {
-      args.push('--width', String(job.parameters.width));
+      args.push(`--width=${job.parameters.width}`);
     }
     if (job.parameters.height) {
-      args.push('--height', String(job.parameters.height));
+      args.push(`--height=${job.parameters.height}`);
     }
     if (job.parameters.fps) {
-      args.push('--fps', String(job.parameters.fps));
+      args.push(`--fps=${job.parameters.fps}`);
     }
-    if (job.parameters.durationInFrames) {
-      args.push('--frames', String(job.parameters.durationInFrames));
+
+    // Render full video range explicitly: 0-(duration-1)
+    if (job.parameters.durationInFrames && job.parameters.durationInFrames > 0) {
+      const lastFrame = job.parameters.durationInFrames - 1;
+      args.push(`--frames=0-${lastFrame}`);
     }
-    if (job.parameters.quality) {
-      args.push('--quality', String(job.parameters.quality));
-    }
+
+    // Do not pass deprecated --quality; mp4 does not use jpeg-quality
     if (job.parameters.scale && job.parameters.scale !== 1) {
-      args.push('--scale', String(job.parameters.scale));
+      args.push(`--scale=${job.parameters.scale}`);
     }
 
     return args;
   }
 
+  private getContentTypeByExtension(filePath: string): string {
+    const ext = path.extname(filePath).toLowerCase();
+    switch (ext) {
+      case '.mp4':
+        return 'video/mp4';
+      case '.webm':
+        return 'video/webm';
+      case '.mov':
+        return 'video/quicktime';
+      case '.gif':
+        return 'image/gif';
+      default:
+        return 'application/octet-stream';
+    }
+  }
+
   private parseRenderProgress(job: RenderJob, output: string): void {
     try {
       // Parse Remotion CLI output for progress
-      // Look for patterns like "Frame 150/300 (50%)"
+      // Look for patterns like "Frame 150/300 (50%)" or other CLI progress
       const progressMatch = output.match(/Frame (\d+)\/(\d+) \((\d+)%\)/);
       if (progressMatch && progressMatch[1] && progressMatch[2] && progressMatch[3]) {
         const currentFrame = parseInt(progressMatch[1]);
@@ -364,7 +614,7 @@ export class RenderService {
       }
 
       // Look for completion indicators
-      if (output.includes('Render complete')) {
+      if (/Render complete|rendered successfully|done/i.test(output)) {
         job.progress = 100;
       }
     } catch (error) {

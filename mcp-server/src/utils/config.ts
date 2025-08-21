@@ -16,6 +16,7 @@ export interface Config {
   server: {
     port: number;
     logLevel: string;
+    staticPort: number;
   };
   development: {
     nodeEnv: string;
@@ -49,7 +50,7 @@ export class ConfigManager {
 
     // Resolve project path (env may be relative)
     const envProjectPath = process.env.REMOTION_PROJECT_PATH;
-    const defaultProjectPath = path.join(projectRoot, 'src');
+    const defaultProjectPath = projectRoot; // Point to project root, not src
     const candidateProjectPath = this.resolvePath(projectRoot, envProjectPath || defaultProjectPath);
     const projectPath = fsSync.existsSync(candidateProjectPath) ? candidateProjectPath : defaultProjectPath;
 
@@ -69,6 +70,7 @@ export class ConfigManager {
       server: {
         port: parseInt(this.getEnvVar('PORT', '3001'), 10),
         logLevel: this.getEnvVar('LOG_LEVEL', 'info'),
+        staticPort: parseInt(this.getEnvVar('STATIC_SERVER_PORT', '3031'), 10),
       },
       development: {
         nodeEnv: this.getEnvVar('NODE_ENV', 'development'),
@@ -107,6 +109,10 @@ export class ConfigManager {
 
   public getLogLevel(): string {
     return this.config.server.logLevel;
+  }
+
+  public getStaticServerPort(): number {
+    return this.config.server.staticPort;
   }
 
   public isDevelopment(): boolean {

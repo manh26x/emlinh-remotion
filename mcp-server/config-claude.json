@@ -1,0 +1,19 @@
+{
+    "mcpServers": {
+      "remotion-server": {
+        "command": "node",
+        "args": [
+          "C:/Users/Admin/Projects/emlinh-remotion/mcp-server/dist/index.js"
+        ],
+        "cwd": "C:/Users/Admin/Projects/emlinh-remotion/mcp-server",
+       "env": {
+          "REMOTION_PROJECT_PATH": "../src",
+          "LOG_LEVEL": "debug",
+          "PORT": "3001",
+          "REMOTION_OUTPUT_DIR": "./output", 
+          "REMOTION_CACHE_DIR": "./cache",
+          "NODE_ENV": "development"
+        }
+      }
+    }
+  }

@@ -29,6 +29,7 @@ export class Logger {
       new winston.transports.Console({
         format: consoleFormat,
         level: config.getLogLevel(),
+        stderrLevels: ['error', 'warn', 'info', 'debug'], // Force all logs to stderr
       }),
     ];
 

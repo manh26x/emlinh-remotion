@@ -1,93 +1,129 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { MCPHandler } from './handlers/mcp-handler.js';
-import { config } from './utils/config.js';
+import { z } from 'zod';
 import { logger } from './utils/logger.js';
-import { ErrorHandler } from './utils/error-handler.js';
+import { config } from './utils/config.js';
+import { MCPHandler } from './handlers/mcp-handler.js';
 
 class RemotionMCPServer {
-  private server: Server;
-  private mcpHandler: MCPHandler;
+  private mcp: McpServer;
+  private handler: MCPHandler;
 
   constructor() {
-    this.mcpHandler = new MCPHandler();
-    this.server = new Server(
-      {
-        name: 'remotion-mcp-server',
-        version: '1.0.0',
-      },
-      {
-        capabilities: {
-          tools: {},
-          resources: {},
-        },
-      }
-    );
+    console.error('Creating RemotionMCPServer...');
+    
+    // Khởi tạo server với thông tin cơ bản
+    console.error('Initializing MCP Server...');
+    this.mcp = new McpServer({
+      name: 'remotion-mcp-server',
+      version: '1.0.0',
+    });
+    this.handler = new MCPHandler();
 
     this.setupServer();
   }
 
   private setupServer(): void {
-    // Handle initialization
-    this.server.setRequestHandler('initialize', async (request) => {
-      try {
-        logger.info('Initializing MCP server', { clientInfo: request.params.clientInfo });
-        
-        const response = await this.mcpHandler.handleInitialize(request.params);
-        
-        logger.info('MCP server initialized successfully');
-        return response;
-      } catch (error) {
-        logger.logError('Server Initialize', error as Error);
-        throw error;
-      }
+    console.error('Setting up server...');
+    
+    // Register capabilities and expose tools
+    this.mcp.server.registerCapabilities({
+      tools: {
+        listChanged: true,
+      },
     });
 
-    // Handle list tools
-    this.server.setRequestHandler('tools/list', async () => {
-      try {
-        logger.info('Listing MCP tools');
-        
-        const response = await this.mcpHandler.handleListTools();
-        
-        logger.info('MCP tools listed successfully', { toolCount: response.tools.length });
-        return response;
-      } catch (error) {
-        logger.logError('Server List Tools', error as Error);
-        throw error;
-      }
-    });
+    // Helper to register a tool that forwards to handler.callTool
+    const registerTool = (
+      name: string,
+      description: string,
+      inputSchema: ReturnType<typeof z.object>
+    ) => {
+      this.mcp.registerTool(
+        name,
+        {
+          description,
+          inputSchema: inputSchema.shape,
+        },
+        async (args) => {
+          const resp = await this.handler.handleCallTool({ name, arguments: args as unknown as Record<string, unknown> });
+          return resp as unknown as { [x: string]: unknown; content: any[] };
+        }
+      );
+    };
 
-    // Handle call tool
-    this.server.setRequestHandler('tools/call', async (request) => {
-      try {
-        const { name, arguments: args } = request.params;
-        logger.info('Calling MCP tool', { toolName: name, arguments: args });
-        
-        const response = await this.mcpHandler.handleCallTool({ name, arguments: args });
-        
-        logger.info('MCP tool called successfully', { toolName: name });
-        return response;
-      } catch (error) {
-        logger.logError('Server Call Tool', error as Error);
-        
-        // Convert error to MCP error format
-        const mcpError = ErrorHandler.handleError(error as Error, 'MCP Tool Call');
-        throw new Error(JSON.stringify(mcpError));
-      }
-    });
+    // validate_project
+    registerTool(
+      'validate_project',
+      'Validate Remotion project structure and configuration',
+      z.object({})
+    );
 
-    // Handle ping (for health checks)
-    this.server.setRequestHandler('ping', async () => {
-      logger.debug('Ping received');
-      return { timestamp: new Date().toISOString() };
-    });
+    // list_compositions
+    registerTool(
+      'list_compositions',
+      'List available Remotion compositions in the project',
+      z.object({})
+    );
+
+    // render_video
+    registerTool(
+      'render_video',
+      'Render a video composition with specified parameters',
+      z.object({
+        composition: z.string(),
+        parameters: z
+          .object({
+            width: z.number().optional(),
+            height: z.number().optional(),
+            fps: z.number().optional(),
+            durationInFrames: z.number().optional(),
+            quality: z.number().optional(),
+            concurrency: z.number().optional(),
+            scale: z.number().optional(),
+          })
+          .partial()
+          .optional(),
+      })
+    );
+
+    // get_render_status
+    registerTool(
+      'get_render_status',
+      'Get the status of a render job',
+      z.object({
+        jobId: z.string(),
+      })
+    );
+
+    // list_render_jobs
+    registerTool(
+      'list_render_jobs',
+      'List all render jobs with their current status',
+      z.object({
+        limit: z.number().optional(),
+      })
+    );
+
+    // cancel_render
+    registerTool(
+      'cancel_render',
+      'Cancel an ongoing render job',
+      z.object({
+        jobId: z.string(),
+      })
+    );
+
+    console.error('Server setup completed');
+    logger.info('Server setup completed');
   }
 
   public async start(): Promise<void> {
     try {
+      console.error('Starting server...');
+      
       // Validate configuration
-      config.validateConfig();
+      await config.validateConfig();
       
       logger.info('Starting Remotion MCP Server', {
         version: '1.0.0',
@@ -96,11 +132,14 @@ class RemotionMCPServer {
       });
 
       // Create transport
+      console.error('Creating transport...');
       const transport = new StdioServerTransport();
       
       // Start server
-      await this.server.connect(transport);
+      console.error('Connecting server...');
+      await this.mcp.connect(transport);
       
+      console.error('Server connected successfully');
       logger.info('Remotion MCP Server started successfully');
       
       // Handle graceful shutdown
@@ -108,6 +147,7 @@ class RemotionMCPServer {
       process.on('SIGTERM', () => this.gracefulShutdown());
       
     } catch (error) {
+      console.error('Server start error:', error);
       logger.logError('Server Start', error as Error);
       process.exit(1);
     }
@@ -115,14 +155,17 @@ class RemotionMCPServer {
 
   private async gracefulShutdown(): Promise<void> {
     try {
+      console.error('Shutting down server...');
       logger.info('Shutting down Remotion MCP Server...');
       
       // Close server connection
-      await this.server.close();
+      await this.mcp.close();
       
+      console.error('Server shutdown complete');
       logger.info('Remotion MCP Server shutdown complete');
       process.exit(0);
     } catch (error) {
+      console.error('Shutdown error:', error);
       logger.logError('Server Shutdown', error as Error);
       process.exit(1);
     }
@@ -130,9 +173,11 @@ class RemotionMCPServer {
 }
 
 // Start server if this file is run directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (process.argv[1] && process.argv[1].endsWith('server.js')) {
+  console.error('Starting MCP server...');
   const server = new RemotionMCPServer();
   server.start().catch((error) => {
+    console.error('Server startup error:', error);
     logger.logError('Server Startup', error);
     process.exit(1);
   });

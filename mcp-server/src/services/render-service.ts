@@ -348,7 +348,7 @@ export class RenderService {
       // Parse Remotion CLI output for progress
       // Look for patterns like "Frame 150/300 (50%)"
       const progressMatch = output.match(/Frame (\d+)\/(\d+) \((\d+)%\)/);
-      if (progressMatch) {
+      if (progressMatch && progressMatch[1] && progressMatch[2] && progressMatch[3]) {
         const currentFrame = parseInt(progressMatch[1]);
         const totalFrames = parseInt(progressMatch[2]);
         const percentage = parseInt(progressMatch[3]);

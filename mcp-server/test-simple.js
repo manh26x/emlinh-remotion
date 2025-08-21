@@ -1,59 +1,78 @@
 #!/usr/bin/env node
 
-import { RemotionService } from './src/services/remotion-service.ts';
+import { spawn } from 'child_process';
+import { setTimeout } from 'timers/promises';
 
-async function testEpic2Directly() {
-  console.log('🎬 Testing Epic 2: Remotion Integration (Direct Test)\n');
+async function testMCPServer() {
+  console.log('Starting MCP server test...');
+  
+  // Start the MCP server
+  const serverProcess = spawn('node', ['dist/server.js'], {
+    stdio: ['pipe', 'pipe', 'pipe']
+  });
 
-  const remotionService = new RemotionService('../');
+  let serverOutput = '';
+  let serverError = '';
 
-  try {
-    // Test 1: Validate Project
-    console.log('1️⃣ Testing Project Validation...');
-    const validation = await remotionService.validateProject();
-    
-    console.log('✅ Project validation completed');
-    console.log('Is Valid:', validation.isValid);
-    console.log('Errors:', validation.errors);
-    console.log('Warnings:', validation.warnings);
-    console.log('Compositions found:', validation.compositions.length);
+  // Collect server output
+  serverProcess.stdout?.on('data', (data) => {
+    serverOutput += data.toString();
+    console.log('Server stdout:', data.toString());
+  });
 
-    // Test 2: Discover Compositions
-    console.log('\n2️⃣ Testing Composition Discovery...');
-    const compositions = await remotionService.discoverCompositions();
-    
-    console.log('✅ Composition discovery completed');
-    console.log('Compositions found:', compositions.length);
-    
-    if (compositions.length > 0) {
-      compositions.forEach((comp, index) => {
-        console.log(`\nComposition ${index + 1}:`);
-        console.log(`  ID: ${comp.id}`);
-        console.log(`  Resolution: ${comp.width}x${comp.height}`);
-        console.log(`  Duration: ${comp.durationInFrames} frames (${Math.round(comp.durationInFrames / comp.fps * 100) / 100}s)`);
-        console.log(`  FPS: ${comp.fps}`);
-      });
+  serverProcess.stderr?.on('data', (data) => {
+    serverError += data.toString();
+    console.log('Server stderr:', data.toString());
+  });
+
+  // Wait a bit for server to start
+  await setTimeout(1000);
+
+  // Send initialize request
+  const initRequest = {
+    jsonrpc: '2.0',
+    id: 1,
+    method: 'initialize',
+    params: {
+      protocolVersion: '2024-11-05',
+      capabilities: {
+        tools: {}
+      },
+      clientInfo: {
+        name: 'test-client',
+        version: '1.0.0'
+      }
     }
+  };
 
-    // Test 3: Check specific composition
-    if (compositions.length > 0) {
-      console.log('\n3️⃣ Testing Composition Info...');
-      const firstComp = compositions[0];
-      const exists = await remotionService.compositionExists(firstComp.id);
-      const info = await remotionService.getCompositionInfo(firstComp.id);
-      
-      console.log('✅ Composition info test completed');
-      console.log(`Composition "${firstComp.id}" exists:`, exists);
-      console.log('Composition info:', info);
-    }
+  console.log('Sending initialize request...');
+  serverProcess.stdin?.write(JSON.stringify(initRequest) + '\n');
 
-    console.log('\n✅ Epic 2 Direct Testing Complete!');
+  // Wait for response
+  await setTimeout(2000);
 
-  } catch (error) {
-    console.error('❌ Test failed:', error.message);
-    console.error('Stack trace:', error.stack);
+  // Send ping request
+  const pingRequest = {
+    jsonrpc: '2.0',
+    id: 2,
+    method: 'ping',
+    params: {}
+  };
+
+  console.log('Sending ping request...');
+  serverProcess.stdin?.write(JSON.stringify(pingRequest) + '\n');
+
+  // Wait for response
+  await setTimeout(2000);
+
+  // Kill the server
+  serverProcess.kill('SIGTERM');
+
+  console.log('Test completed.');
+  console.log('Server output:', serverOutput);
+  if (serverError) {
+    console.log('Server errors:', serverError);
   }
 }
 
-// Run the test
-testEpic2Directly();
+testMCPServer().catch(console.error);

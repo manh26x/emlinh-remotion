@@ -48,15 +48,15 @@ export class ConfigManager {
     const distDir = path.dirname(distFilePath);
     const projectRoot = path.resolve(distDir, '../../');
 
-    // Resolve project path (env may be relative)
-    const envProjectPath = process.env.REMOTION_PROJECT_PATH;
-    const defaultProjectPath = projectRoot; // Point to project root, not src
+    // Xác định đường dẫn project (biến môi trường có thể là đường dẫn tương đối)
+    const envProjectPath = process.env['REMOTION_PROJECT_PATH'];
+    const defaultProjectPath = projectRoot; // Trỏ tới thư mục gốc project, không phải src
     const candidateProjectPath = this.resolvePath(projectRoot, envProjectPath || defaultProjectPath);
     const projectPath = fsSync.existsSync(candidateProjectPath) ? candidateProjectPath : defaultProjectPath;
 
     // Resolve output and cache dirs
-    const envOutputDir = process.env.REMOTION_OUTPUT_DIR || path.join(projectRoot, 'mcp-server/output');
-    const envCacheDir = process.env.REMOTION_CACHE_DIR || path.join(projectRoot, 'mcp-server/cache');
+    const envOutputDir = process.env['REMOTION_OUTPUT_DIR'] || path.join(projectRoot, 'mcp-server/output');
+    const envCacheDir = process.env['REMOTION_CACHE_DIR'] || path.join(projectRoot, 'mcp-server/cache');
 
     const outputDir = this.resolvePath(projectRoot, envOutputDir);
     const cacheDir = this.resolvePath(projectRoot, envCacheDir);

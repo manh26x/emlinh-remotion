@@ -108,7 +108,7 @@ export class ErrorHandler {
   public static validateRequired(
     value: unknown,
     fieldName: string,
-    context: string
+    _context: string
   ): void {
     if (value === undefined || value === null || value === '') {
       throw this.createValidationError(

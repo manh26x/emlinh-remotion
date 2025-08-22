@@ -22,6 +22,7 @@ export const myCompSchema = z.object({
   durationInSeconds: z.number().min(1).default(10),
   backgroundScene: z.enum(["office", "abstract", "none"]).default("none"),
   audioFileName: z.string().default("None"), // Thay đổi từ enum sang string để cho phép tên file động
+  mouthCuesUrl: z.string().optional(), // Thêm mouthCuesUrl cho lip-sync data
   cameraFov: z.number().default(30),
   cameraPosition: z.tuple([z.number(), z.number(), z.number()]).default([0, 0.7, 4.5]),
 });
@@ -59,6 +60,7 @@ export const RemotionRoot: React.FC = () => {
           backgroundScene: 'none',
           durationInSeconds: defaultDurationInSeconds,
           audioFileName: "None", // Giá trị mặc định cho audio là "None"
+          mouthCuesUrl: undefined, // Mặc định không có lip-sync
           cameraFov: 30,
           cameraPosition: [0, 0.7, 4.5],
         }}
@@ -77,6 +79,7 @@ export const RemotionRoot: React.FC = () => {
           backgroundScene: 'none',
           durationInSeconds: defaultDurationInSeconds,
           audioFileName: "None", // Giá trị mặc định cho audio là "None"
+          mouthCuesUrl: undefined, // Mặc định không có lip-sync
           cameraFov: 30,
           cameraPosition: [0, 0.7, 4.5],
         }}

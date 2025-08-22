@@ -228,6 +228,54 @@ class RemotionMCPServer {
       })
     );
 
+    // convert_audio_format
+    registerTool(
+      'convert_audio_format',
+      'Convert audio from WAV to OGG format for Rhubarb lip-sync processing',
+      z.object({
+        inputPath: z.string().min(1),
+        outputPath: z.string().min(1),
+        quality: z.number().min(1).max(10).optional()
+      })
+    );
+
+    // generate_lipsync_data
+    registerTool(
+      'generate_lipsync_data',
+      'Generate lip-sync data from OGG audio using Rhubarb CLI',
+      z.object({
+        audioPath: z.string().min(1),
+        outputPath: z.string().min(1),
+        dialogFile: z.string().optional(),
+        timeout: z.number().min(10).max(300).optional()
+      })
+    );
+
+    // render_video_with_lipsync
+    registerTool(
+      'render_video_with_lipsync',
+      'Render video with lip-sync animation from audio file',
+      z.object({
+        audioPath: z.string().min(1),
+        compositionId: z.string().optional(),
+        width: z.number().optional(),
+        height: z.number().optional(),
+        fps: z.number().optional(),
+        durationInFrames: z.number().optional(),
+        backgroundScene: z.string().optional(),
+        quality: z.number().min(1).max(10).optional(),
+        dialogFile: z.string().optional(),
+        timeout: z.number().min(10).max(300).optional(),
+        lipSyncOffsetSeconds: z.number().optional(),
+        smoothingEnabled: z.boolean().optional(),
+        smoothingWindowFrames: z.number().min(1).max(10).optional(),
+        renderParams: z.object({
+          scale: z.number().optional(),
+          concurrency: z.number().optional()
+        }).optional()
+      })
+    );
+
     // list_audio_files
     registerTool(
       'list_audio_files',

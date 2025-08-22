@@ -5,6 +5,7 @@
 
 const { execSync } = require('child_process');
 const fs = require('fs');
+const path = require('path');
 
 console.log('🚀 REMOTION DIAGNOSTIC TEST');
 console.log('=' .repeat(60));
@@ -57,9 +58,14 @@ try {
 
 // Step 4: Test simple render
 console.log('\n🎬 Testing render...');
-const outputFile = 'out/diagnostic-test.mp4';
+const outputFile = path.join('out', 'diagnostic-test.mp4');
 const props = { audioFileName: 'None', durationInSeconds: 2 };
-const command = `npx remotion render Scene-Portrait --props='${JSON.stringify(props)}' --output=${outputFile} --timeout=1200000`;
+// Viết props ra file để tránh lỗi shell trên Windows khi truyền JSON inline
+const propsDir = path.join('mcp-server', 'cache');
+try { fs.mkdirSync(propsDir, { recursive: true }); } catch (e) {}
+const propsPath = path.join(propsDir, 'diagnostic-props.json');
+fs.writeFileSync(propsPath, JSON.stringify(props), 'utf8');
+const command = `npx remotion render Scene-Portrait --props=${JSON.stringify(propsPath)} --output=${JSON.stringify(outputFile)} --timeout=1200000`;
 
 console.log(`⚡ Command: ${command}`);
 
@@ -104,6 +110,15 @@ try {
   console.log(`❌ FAILED after ${duration}ms`);
   console.log(`   Error: ${error.message.substring(0, 300)}...`);
   result = { success: false, duration, error: error.message };
+}
+
+// Cleanup props file
+try {
+  if (typeof propsPath === 'string' && fs.existsSync(propsPath)) {
+    fs.unlinkSync(propsPath);
+  }
+} catch (e) {
+  // ignore
 }
 
 // Diagnosis

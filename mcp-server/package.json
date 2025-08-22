@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/server.ts --bundle --platform=node --target=node18 --format=esm --external:winston --external:dotenv --outfile=dist/server.js",
+    "build": "esbuild src/server.ts --bundle --platform=node --target=node18 --format=esm --external:winston --external:dotenv --external:form-data --external:combined-stream --external:util --external:openai --external:axios --external:os --external:path --external:fs --outfile=dist/server.js",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "test": "jest",

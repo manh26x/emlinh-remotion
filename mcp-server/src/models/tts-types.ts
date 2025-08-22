@@ -1,7 +1,7 @@
 // TTS Integration Types
 export type TTSVoice = 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer';
 export type TTSModel = 'tts-1' | 'tts-1-hd';
-export type AudioFormat = 'mp3' | 'opus' | 'aac' | 'flac';
+export type AudioFormat = 'mp3' | 'opus' | 'aac' | 'flac' | 'wav';
 export type ScriptTone = 'professional' | 'casual' | 'educational' | 'entertaining';
 
 // TTS Request/Response Types
@@ -105,7 +105,8 @@ export enum TTSErrorCode {
   FILE_NOT_FOUND = 'TTS_FILE_NOT_FOUND',
   NETWORK_ERROR = 'TTS_NETWORK_ERROR',
   SCRIPT_GENERATION_FAILED = 'SCRIPT_GENERATION_FAILED',
-  SCRIPT_VALIDATION_FAILED = 'SCRIPT_VALIDATION_FAILED'
+  SCRIPT_VALIDATION_FAILED = 'SCRIPT_VALIDATION_FAILED',
+  AUDIO_PROCESSING_FAILED = 'AUDIO_PROCESSING_FAILED'
 }
 
 export class TTSError extends Error {

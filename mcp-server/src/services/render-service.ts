@@ -45,6 +45,7 @@ export interface RenderProgress {
 export class RenderService {
   private jobs: Map<string, RenderJob> = new Map();
   private activeProcesses: Map<string, ChildProcess> = new Map();
+  private propsFiles: Map<string, string> = new Map();
   private readonly remotionService: RemotionService;
   private readonly videoStreamingService: VideoStreamingService;
   private readonly outputDir: string;
@@ -156,6 +157,9 @@ export class RenderService {
       job.actualDuration = job.endTime.getTime() - job.startTime.getTime();
 
       logger.info('Render job cancelled', { jobId });
+
+      // Cleanup props file if any
+      await this.cleanupPropsFile(jobId);
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -449,7 +453,7 @@ export class RenderService {
       job.outputPath = outputPath;
 
       // Build Remotion CLI command
-      const args = this.buildRenderCommand(job, outputPath);
+      const args = await this.buildRenderCommand(job, outputPath);
 
       logger.info('Starting render process', { jobId: job.id, args });
 
@@ -500,6 +504,9 @@ export class RenderService {
             error: job.error 
           });
         }
+
+        // Cleanup props file if any
+        void this.cleanupPropsFile(job.id);
       });
 
       // Handle process errors
@@ -511,6 +518,9 @@ export class RenderService {
         job.actualDuration = job.endTime.getTime() - job.startTime.getTime();
         
         logger.error('Render process error', { jobId: job.id, error: error.message });
+
+        // Cleanup props file if any
+        void this.cleanupPropsFile(job.id);
       });
 
     } catch (error) {
@@ -521,6 +531,9 @@ export class RenderService {
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to start render process', { error: errorMessage, jobId: job.id });
+
+      // Cleanup props file if any (in case it was created before failing)
+      await this.cleanupPropsFile(job.id);
     }
   }
 
@@ -528,17 +541,23 @@ export class RenderService {
     compositionInfo: any,
     userParameters: RenderParameters
   ): RenderParameters {
-    return {
+    const base: RenderParameters = {
       width: userParameters.width ?? compositionInfo.width,
       height: userParameters.height ?? compositionInfo.height,
       fps: userParameters.fps ?? compositionInfo.fps,
-      durationInFrames: userParameters.durationInFrames ?? compositionInfo.durationInFrames,
       outputFormat: userParameters.outputFormat ?? 'mp4',
       quality: userParameters.quality ?? 8,
       scale: userParameters.scale ?? 1,
       concurrency: userParameters.concurrency ?? 1,
       ...userParameters
     };
+
+    // Remove optional keys that may have been spread as undefined
+    if (base.durationInFrames === undefined) {
+      delete (base as any).durationInFrames;
+    }
+
+    return base;
   }
 
   private estimateRenderDuration(compositionInfo: any, parameters: RenderParameters): number {
@@ -550,7 +569,8 @@ export class RenderService {
     return Math.round((totalFrames * complexityFactor) / concurrency);
   }
 
-  private buildRenderCommand(job: RenderJob, outputPath: string): string[] {
+  private async buildRenderCommand(job: RenderJob, outputPath: string): Promise<string[]> {
+    // Pass raw args; child_process.spawn handles quoting/escaping as needed
     const args: string[] = [job.compositionId, outputPath];
 
     if (job.parameters.width) {
@@ -572,6 +592,49 @@ export class RenderService {
     // Do not pass deprecated --quality; mp4 does not use jpeg-quality
     if (job.parameters.scale && job.parameters.scale !== 1) {
       args.push(`--scale=${job.parameters.scale}`);
+    }
+
+    // Pass selected composition props via --props
+    // Only include keys that are part of the composition schema
+    const allowedProps = [
+      'durationInSeconds',
+      'backgroundScene',
+      'audioFileName',
+      'mouthCuesUrl',
+      'lipSyncOptions',
+      'cameraFov',
+      'cameraPosition',
+    ];
+    const compProps: Record<string, unknown> = {};
+    for (const key of allowedProps) {
+      const value = (job.parameters as any)[key];
+      if (value !== undefined) {
+        compProps[key] = value;
+      }
+    }
+    if (Object.keys(compProps).length > 0) {
+      // Validate JSON serializability
+      let propsJson = '';
+      try {
+        propsJson = JSON.stringify(compProps);
+        JSON.parse(propsJson); // sanity check
+      } catch (err) {
+        throw ErrorHandler.createProcessingError(
+          'build_render_command',
+          'invalid_props_json',
+          `Failed to serialize props to JSON: ${(err as Error).message}`
+        );
+      }
+
+      // Write props to a temp file to avoid shell escaping issues on Windows
+      const cacheDir = config.getRemotionCacheDir();
+      await fs.mkdir(cacheDir, { recursive: true });
+      const propsPath = path.join(cacheDir, `props-${job.id}.json`);
+      await fs.writeFile(propsPath, propsJson, { encoding: 'utf-8' });
+      this.propsFiles.set(job.id, propsPath);
+
+      // Pass file path to Remotion CLI
+      args.push(`--props=${propsPath}`);
     }
 
     return args;
@@ -623,6 +686,19 @@ export class RenderService {
         jobId: job.id, 
         error: error instanceof Error ? error.message : 'Unknown error' 
       });
+    }
+  }
+
+  private async cleanupPropsFile(jobId: string): Promise<void> {
+    const propsPath = this.propsFiles.get(jobId);
+    if (!propsPath) return;
+    try {
+      await fs.unlink(propsPath);
+      logger.debug('Cleaned up props file', { jobId, propsPath });
+    } catch (e) {
+      logger.debug('Failed to cleanup props file (ignored)', { jobId, propsPath, error: (e as Error).message });
+    } finally {
+      this.propsFiles.delete(jobId);
     }
   }
 }

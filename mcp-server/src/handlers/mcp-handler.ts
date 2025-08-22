@@ -38,7 +38,7 @@ export class MCPHandler {
     this.renderHandlers = new RenderHandlers(this.remotionService, this.renderService);
     this.outputHandlers = new OutputHandlers(this.renderService, this.systemService);
     this.streamingHandlers = new StreamingHandlers(this.renderService);
-    this.audioHandlers = new AudioHandlers();
+    this.audioHandlers = new AudioHandlers(this.renderHandlers);
   }
 
   public async handleInitialize(request: InitializeRequest): Promise<InitializeResponse> {
@@ -167,6 +167,16 @@ export class MCPHandler {
           break;
         case 'cleanup_audio_files':
           response = await this.audioHandlers.handleCleanupAudioFiles(request.arguments);
+          break;
+        // Lip-sync Integration Tools
+        case 'convert_audio_format':
+          response = await this.audioHandlers.handleConvertAudioFormat(request.arguments);
+          break;
+        case 'generate_lipsync_data':
+          response = await this.audioHandlers.handleGenerateLipSyncData(request.arguments);
+          break;
+        case 'render_video_with_lipsync':
+          response = await this.audioHandlers.handleRenderVideoWithLipSync(request.arguments);
           break;
         default:
           throw ErrorHandler.createProcessingError(

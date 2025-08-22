@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '../utils/logger.js';
+import { config } from '../utils/config';
 import {
   IAudioManager,
   AudioMetadata,
@@ -18,7 +19,7 @@ export class AudioManager implements IAudioManager {
   private readonly retentionHours: number;
 
   constructor() {
-    this.audioOutputDir = path.join(process.cwd(), 'public', 'audios');
+    this.audioOutputDir = path.join(config.getRemotionProjectPath(), 'public', 'audios');
     this.maxAudioFiles = 100;
     this.retentionHours = 24;
   }

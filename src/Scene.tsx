@@ -3,7 +3,7 @@ import React, { Suspense } from 'react';
 import { AbsoluteFill, useVideoConfig, Audio, staticFile } from "remotion"; 
 import { PerspectiveCamera } from "@react-three/drei"; 
 
-import AudioManager from './utils/AudioManager'; 
+// import AudioManager from './utils/AudioManager'; // Unused for now 
 
 import { OfficeBackground } from './backgrounds/OfficeBackground';
 import { AbstractBackground } from './backgrounds/AbstractBackground';
@@ -11,6 +11,7 @@ import { Avatar } from './Avatar.jsx';
 import { useGLTF } from '@react-three/drei';
 import { z } from 'zod';
 import { myCompSchema } from './Root';
+import { LipSyncResolver } from './utils/LipSyncResolver';
 
 export type SceneProps = z.infer<typeof myCompSchema>;
 
@@ -30,6 +31,7 @@ export const Scene: React.FC<SceneProps> = ({
   cameraPosition = [0, 0.7, 4.5],
   backgroundScene,
   audioFileName,
+  mouthCuesUrl,
 }) => {
   const { width, height } = useVideoConfig();
   const aspectRatio = width / height;
@@ -50,9 +52,12 @@ export const Scene: React.FC<SceneProps> = ({
   
   const finalCharacterModelUrl = modelPath;
   
-  const mouthCuesUrl = audioFileName && audioFileName !== "None" 
-    ? staticFile(`audios/${audioFileName.replace('.mp3', '.json').replace('.wav', '.json')}`) 
-    : null;
+  // Resolve lipsync:// protocol URLs or use fallback
+  const finalMouthCuesUrl = mouthCuesUrl 
+    ? LipSyncResolver.resolveLipSyncUrl(mouthCuesUrl)
+    : (audioFileName && audioFileName !== "None" 
+        ? staticFile(`audios/${audioFileName.replace('.mp3', '.json').replace('.wav', '.json')}`) 
+        : null);
 
   return (
     <AbsoluteFill style={container}>
@@ -98,7 +103,7 @@ export const Scene: React.FC<SceneProps> = ({
           >
             <Avatar 
               modelUrl={finalCharacterModelUrl} 
-              mouthCuesUrl={mouthCuesUrl} 
+              mouthCuesUrl={finalMouthCuesUrl} 
               lipSyncOptions={{
                 audioOffset: 0, 
                 intensityFactor: 0.55, 

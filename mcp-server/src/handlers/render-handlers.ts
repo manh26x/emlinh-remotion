@@ -2,6 +2,7 @@ import { CallToolResponse } from '../models/types';
 import { logger } from '../utils/logger';
 import { RemotionService } from '../services/remotion-service';
 import { RenderService } from '../services/render-service';
+import path from 'path';
 
 export class RenderHandlers {
   constructor(
@@ -13,6 +14,9 @@ export class RenderHandlers {
     try {
       const composition = arguments_['composition'] as string;
       const parameters = (arguments_['parameters'] as Record<string, unknown>) || {};
+      const audioPath = arguments_['audioPath'] as string;
+      const audioFileNameArg = arguments_['audioFileName'] as string | undefined;
+      const durationInSeconds = arguments_['durationInSeconds'] as number | undefined;
 
       // Validate composition exists first
       const compositionExists = await this.remotionService.compositionExists(composition);
@@ -25,6 +29,23 @@ export class RenderHandlers {
             },
           ],
         };
+      }
+
+      // Normalize audio input -> audioFileName (expected by composition Schema)
+      if (audioFileNameArg) {
+        parameters['audioFileName'] = audioFileNameArg;
+      } else if (audioPath) {
+        try {
+          parameters['audioFileName'] = path.basename(audioPath);
+        } catch {
+          // fallback: use as-is
+          parameters['audioFileName'] = audioPath;
+        }
+      }
+
+      // Forward durationInSeconds if provided
+      if (typeof durationInSeconds === 'number' && !Number.isNaN(durationInSeconds)) {
+        parameters['durationInSeconds'] = durationInSeconds;
       }
 
       // Trigger render

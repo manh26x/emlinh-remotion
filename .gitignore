@@ -48,3 +48,7 @@ pids
 # Audio files
 public/audios/*
 !public/audios/.gitkeep
+!output/.gitkeep
+!cache/.gitkeep
+output/*
+cache/*

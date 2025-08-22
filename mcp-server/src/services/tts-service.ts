@@ -3,13 +3,14 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import { logger } from '../utils/logger.js';
-import { config } from '../utils/config.js';
+import { config } from '../utils/config';
 import {
   ITTSService,
   TTSRequest,
   TTSResponse,
   TTSVoice,
   TTSModel,
+  AudioFormat,
   TTSError,
   TTSErrorCode,
   TTSMetadata
@@ -22,7 +23,7 @@ export class TTSService implements ITTSService {
   private readonly timeoutMs = 30000;
 
   constructor() {
-    this.apiKey = process.env.OPENAI_API_KEY || '';
+    this.apiKey = process.env['OPENAI_API_KEY'] || '';
     if (!this.apiKey) {
       throw new TTSError(
         'OpenAI API key is required',
@@ -47,7 +48,7 @@ export class TTSService implements ITTSService {
 
       // Save audio file
       const audioId = uuidv4();
-      const filename = `${audioId}.mp3`;
+      const filename = `${audioId}.wav`;
       const audioOutputDir = this.getAudioOutputDir();
       const filePath = path.join(audioOutputDir, filename);
 
@@ -70,10 +71,10 @@ export class TTSService implements ITTSService {
 
       const response: TTSResponse = {
         audioId,
-        filePath: path.relative(process.cwd(), filePath),
+        filePath: filePath,
         duration: this.estimateDuration(request.text, request.voice),
         size: audioBuffer.length,
-        format: 'mp3',
+        format: (request.responseFormat || 'wav') as AudioFormat,
         metadata
       };
 
@@ -138,7 +139,7 @@ export class TTSService implements ITTSService {
       model: request.model,
       input: request.text,
       voice: request.voice,
-      response_format: request.responseFormat || 'mp3',
+      response_format: request.responseFormat || 'wav',
       speed: request.speed || 1.0
     };
 
@@ -278,6 +279,20 @@ export class TTSService implements ITTSService {
   }
 
   private getAudioOutputDir(): string {
-    return process.env.AUDIO_OUTPUT_DIR || path.join(process.cwd(), '../public/audios');
+    // Resolve audio output directory to an ABSOLUTE path under the Remotion project root
+    // If REMOTION_PROJECT_PATH points to '.../src', use its parent as the project root
+    const projectPath = config.getRemotionProjectPath();
+    const remotionRoot = path.basename(projectPath) === 'src'
+      ? path.resolve(projectPath, '..')
+      : projectPath;
+
+    const envDir = process.env['AUDIO_OUTPUT_DIR'];
+    if (envDir) {
+      return path.isAbsolute(envDir)
+        ? envDir
+        : path.resolve(remotionRoot, envDir);
+    }
+
+    return path.join(remotionRoot, 'public', 'audios');
   }
 }

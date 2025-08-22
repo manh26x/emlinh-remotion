@@ -30,6 +30,10 @@ export function initializeTools(): Tool[] {
             type: 'string',
             description: 'Name of the composition to render',
           },
+          audioPath: {
+            type: 'string',
+            description: 'Path to audio file to include in the video',
+          },
           parameters: {
             type: 'object',
             description: 'Render parameters (width, height, fps, quality, concurrency, etc.)',
@@ -413,6 +417,140 @@ export function initializeTools(): Tool[] {
           },
         },
         required: [],
+      },
+    },
+    // Lip-sync Integration Tools
+    {
+      name: 'convert_audio_format',
+      description: 'Convert audio from WAV to OGG format for Rhubarb lip-sync processing',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          inputPath: {
+            type: 'string',
+            description: 'Path to input WAV audio file',
+            minLength: 1,
+          },
+          outputPath: {
+            type: 'string',
+            description: 'Path for output OGG audio file',
+            minLength: 1,
+          },
+          quality: {
+            type: 'number',
+            description: 'Audio quality (1-10, default: 5)',
+            minimum: 1,
+            maximum: 10,
+          },
+        },
+        required: ['inputPath', 'outputPath'],
+      },
+    },
+    {
+      name: 'generate_lipsync_data',
+      description: 'Generate lip-sync data from OGG audio using Rhubarb CLI',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          audioPath: {
+            type: 'string',
+            description: 'Path to OGG audio file',
+            minLength: 1,
+          },
+          outputPath: {
+            type: 'string',
+            description: 'Path for output lip-sync JSON file',
+            minLength: 1,
+          },
+          dialogFile: {
+            type: 'string',
+            description: 'Optional path to dialog text file for improved accuracy',
+          },
+          timeout: {
+            type: 'number',
+            description: 'Processing timeout in seconds (10-300, default: 60)',
+            minimum: 10,
+            maximum: 300,
+          },
+        },
+        required: ['audioPath', 'outputPath'],
+      },
+    },
+    {
+      name: 'render_video_with_lipsync',
+      description: 'Render video with lip-sync animation from audio file',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          audioPath: {
+            type: 'string',
+            description: 'Path to audio file (WAV/MP3/OGG)',
+            minLength: 1,
+          },
+          compositionId: {
+            type: 'string',
+            description: 'Composition ID (default: Scene-Landscape)',
+          },
+          width: {
+            type: 'number',
+            description: 'Video width in pixels',
+          },
+          height: {
+            type: 'number',
+            description: 'Video height in pixels',
+          },
+          fps: {
+            type: 'number',
+            description: 'Frames per second',
+          },
+          durationInFrames: {
+            type: 'number',
+            description: 'Duration in frames',
+          },
+          backgroundScene: {
+            type: 'string',
+            description: 'Background scene to use',
+          },
+          quality: {
+            type: 'number',
+            description: 'Audio conversion quality (1-10, default: 5)',
+            minimum: 1,
+            maximum: 10,
+          },
+          dialogFile: {
+            type: 'string',
+            description: 'Optional dialog text file for improved lip-sync accuracy',
+          },
+          timeout: {
+            type: 'number',
+            description: 'Lip-sync processing timeout in seconds (10-300, default: 60)',
+            minimum: 10,
+            maximum: 300,
+          },
+          lipSyncOffsetSeconds: {
+            type: 'number',
+            description: 'Lip-sync timing offset in seconds',
+          },
+          smoothingEnabled: {
+            type: 'boolean',
+            description: 'Enable lip-sync smoothing (default: true)',
+          },
+          smoothingWindowFrames: {
+            type: 'number',
+            description: 'Smoothing window size in frames (1-10, default: 3)',
+            minimum: 1,
+            maximum: 10,
+          },
+          renderParams: {
+            type: 'object',
+            description: 'Additional render parameters',
+            properties: {
+              scale: { type: 'number', description: 'Scale factor' },
+              concurrency: { type: 'number', description: 'Parallel render processes' },
+            },
+          },
+        },
+        required: ['audioPath'],
       },
     },
   ];

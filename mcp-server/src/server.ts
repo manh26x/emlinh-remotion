@@ -130,7 +130,7 @@ class RemotionMCPServer {
         description: 'Rendered video output file',
         mimeType: 'video/mp4',
       },
-      async (uri, { filename }) => {
+      async (_, { filename }) => {
         // Build absolute file path
         const base = config.getRemotionOutputDir();
         const filePath = `${base}/${filename}`;
@@ -173,8 +173,96 @@ class RemotionMCPServer {
       z.object({ filePath: z.string() })
     );
 
+    // TTS Integration Tools
+    this.setupTTSTools(registerTool);
+
     console.error('Server setup completed');
     logger.info('Server setup completed');
+  }
+
+  private setupTTSTools(registerTool: any): void {
+    // generate_tts_audio
+    registerTool(
+      'generate_tts_audio',
+      'Generate TTS audio from text using OpenAI TTS API',
+      z.object({
+        text: z.string().min(1).max(4096),
+        voice: z.enum(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']).optional(),
+        model: z.enum(['tts-1', 'tts-1-hd']).optional(),
+        speed: z.number().min(0.25).max(4.0).optional(),
+        format: z.enum(['mp3', 'opus', 'aac', 'flac']).optional()
+      })
+    );
+
+    // generate_script
+    registerTool(
+      'generate_script',
+      'Generate script content from topic',
+      z.object({
+        topic: z.string().min(1),
+        template: z.string().optional(),
+        maxWords: z.number().min(50).max(2000).optional(),
+        tone: z.enum(['professional', 'casual', 'educational', 'entertaining']).optional(),
+        language: z.enum(['vi', 'en']).optional()
+      })
+    );
+
+    // render_video_with_tts
+    registerTool(
+      'render_video_with_tts',
+      'Render video with auto-generated TTS audio',
+      z.object({
+        composition: z.string(),
+        topic: z.string().optional(),
+        script: z.string().optional(),
+        voice: z.enum(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']).optional(),
+        ttsModel: z.enum(['tts-1', 'tts-1-hd']).optional(),
+        parameters: z.object({
+          width: z.number().optional(),
+          height: z.number().optional(),
+          fps: z.number().optional(),
+          quality: z.number().optional(),
+          concurrency: z.number().optional(),
+          scale: z.number().optional()
+        }).optional()
+      })
+    );
+
+    // list_audio_files
+    registerTool(
+      'list_audio_files',
+      'List recent audio files with filtering options',
+      z.object({
+        limit: z.number().optional(),
+        filter: z.object({
+          voice: z.enum(['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer']).optional(),
+          model: z.enum(['tts-1', 'tts-1-hd']).optional(),
+          createdAfter: z.string().optional(),
+          createdBefore: z.string().optional(),
+          scriptId: z.string().optional()
+        }).optional()
+      })
+    );
+
+    // delete_audio_file
+    registerTool(
+      'delete_audio_file',
+      'Delete an audio file by ID',
+      z.object({
+        audioId: z.string()
+      })
+    );
+
+    // cleanup_audio_files
+    registerTool(
+      'cleanup_audio_files',
+      'Cleanup old audio files based on retention policy',
+      z.object({
+        olderThanHours: z.number().optional(),
+        maxFiles: z.number().optional(),
+        dryRun: z.boolean().optional()
+      })
+    );
   }
 
   public async start(): Promise<void> {

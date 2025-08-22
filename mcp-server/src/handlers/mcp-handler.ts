@@ -16,6 +16,7 @@ import { ProjectHandlers } from './project-handlers';
 import { RenderHandlers } from './render-handlers';
 import { OutputHandlers } from './output-handlers';
 import { StreamingHandlers } from './streaming-handlers';
+import { AudioHandlers } from './audio-handlers';
 
 export class MCPHandler {
   private readonly tools: Tool[];
@@ -26,6 +27,7 @@ export class MCPHandler {
   private readonly renderHandlers: RenderHandlers;
   private readonly outputHandlers: OutputHandlers;
   private readonly streamingHandlers: StreamingHandlers;
+  private readonly audioHandlers: AudioHandlers;
 
   constructor() {
     this.tools = initializeTools();
@@ -36,6 +38,7 @@ export class MCPHandler {
     this.renderHandlers = new RenderHandlers(this.remotionService, this.renderService);
     this.outputHandlers = new OutputHandlers(this.renderService, this.systemService);
     this.streamingHandlers = new StreamingHandlers(this.renderService);
+    this.audioHandlers = new AudioHandlers();
   }
 
   public async handleInitialize(request: InitializeRequest): Promise<InitializeResponse> {
@@ -145,6 +148,25 @@ export class MCPHandler {
           break;
         case 'cancel_video_stream':
           response = await this.streamingHandlers.handleCancelVideoStream(request.arguments);
+          break;
+        // TTS Integration Tools
+        case 'generate_tts_audio':
+          response = await this.audioHandlers.handleGenerateTTSAudio(request.arguments);
+          break;
+        case 'generate_script':
+          response = await this.audioHandlers.handleGenerateScript(request.arguments);
+          break;
+        case 'render_video_with_tts':
+          response = await this.audioHandlers.handleRenderVideoWithTTS(request.arguments);
+          break;
+        case 'list_audio_files':
+          response = await this.audioHandlers.handleListAudioFiles(request.arguments);
+          break;
+        case 'delete_audio_file':
+          response = await this.audioHandlers.handleDeleteAudioFile(request.arguments);
+          break;
+        case 'cleanup_audio_files':
+          response = await this.audioHandlers.handleCleanupAudioFiles(request.arguments);
           break;
         default:
           throw ErrorHandler.createProcessingError(

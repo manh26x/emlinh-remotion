@@ -21,11 +21,17 @@ Emlinh Remotion là một dự án video generation sử dụng Remotion framewo
 
 ### 🤖 MCP Server Integration
 - **MCP Protocol Compliance** - Tuân thủ Model Context Protocol standard
-- **4 MCP Tools** được implement:
+- **10+ MCP Tools** được implement:
   - `list_compositions` - Liệt kê video compositions
   - `render_video` - Render video với parameters
   - `get_render_status` - Kiểm tra trạng thái render
   - `cancel_render` - Hủy render job
+  - **🎙️ TTS Integration Tools:**
+    - `generate_tts_audio` - Tạo audio từ text với OpenAI TTS
+    - `generate_script` - Tạo script từ topic
+    - `render_video_with_tts` - Render video với TTS audio tự động
+    - `list_audio_files` - Quản lý audio files
+    - `cleanup_audio_files` - Dọn dẹp files cũ
 - **TypeScript Strict Mode** với comprehensive type safety
 - **Error Handling & Logging** system
 - **Configuration Management** với environment variables
@@ -109,6 +115,13 @@ PORT=3001
 # Remotion Configuration
 REMOTION_OUTPUT_DIR=./output
 REMOTION_CACHE_DIR=./cache
+
+# TTS Integration Configuration
+OPENAI_API_KEY=sk-proj-...
+OPENAI_TTS_MODEL=tts-1
+OPENAI_TTS_VOICE=alloy
+AUDIO_OUTPUT_DIR=../public/audios
+AUDIO_RETENTION_HOURS=24
 
 # Development Configuration
 NODE_ENV=development
@@ -236,6 +249,12 @@ npm run build
 - **[Product Requirements](docs/prd.md)** - Chi tiết requirements và epics
 - **[Technical Architecture](docs/architecture.md)** - Kiến trúc kỹ thuật chi tiết
 - **[MCP Server README](mcp-server/README.md)** - Hướng dẫn MCP server
+
+### 🎙️ TTS Integration Documentation
+- **[TTS Architecture](docs/tts-integration-architecture.md)** - Kiến trúc TTS Integration
+- **[TTS API Specification](docs/tts-api-specification.md)** - Chi tiết API và tools
+- **[TTS Implementation Guide](docs/tts-implementation-guide.md)** - Hướng dẫn implementation
+- **[TTS User Guide](docs/tts-user-guide.md)** - Hướng dẫn sử dụng cho end-user
 
 ## 🔧 Scripts
 

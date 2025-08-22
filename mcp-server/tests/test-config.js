@@ -1,10 +1,10 @@
 // Test configuration với direct import
-import('./dist/server.js').then(async (server) => {
+import('../dist/server.js').then(async (server) => {
   console.log('🧪 Testing Configuration...\n');
   
   try {
     // Create services để test configuration
-    const remotionService = new (await import('./src/services/remotion-service.ts')).RemotionService();
+    const remotionService = new (await import('../src/services/remotion-service.ts')).RemotionService();
     
     console.log('Testing project validation...');
     const validation = await remotionService.validateProject();

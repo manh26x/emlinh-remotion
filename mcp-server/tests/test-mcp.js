@@ -9,7 +9,7 @@ const __dirname = dirname(__filename);
 async function testMCPServer() {
   console.log('Testing MCP Server...');
   
-  const serverPath = join(__dirname, 'dist', 'server.js');
+  const serverPath = join(__dirname, '..', 'dist', 'server.js');
   const server = spawn('node', [serverPath], {
     stdio: ['pipe', 'pipe', 'pipe']
   });

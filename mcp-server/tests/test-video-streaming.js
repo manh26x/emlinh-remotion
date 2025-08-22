@@ -1,4 +1,4 @@
-const { VideoStreamingService } = require('./dist/server.js');
+const { VideoStreamingService } = require('../dist/server.js');
 
 async function testVideoStreaming() {
   console.log('🧪 Testing Video Streaming Service...\n');

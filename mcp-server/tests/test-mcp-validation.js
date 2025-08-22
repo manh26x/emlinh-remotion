@@ -5,7 +5,7 @@ async function testMCPValidation() {
 
   return new Promise((resolve, reject) => {
     // Start MCP server process
-    const serverProcess = spawn('node', ['dist/server.js'], {
+    const serverProcess = spawn('node', ['../dist/server.js'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 

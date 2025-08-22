@@ -41,7 +41,7 @@ async function testListCompositions() {
 
 async function sendMCPRequest(toolName, arguments_) {
   return new Promise((resolve, reject) => {
-    const child = spawn('node', ['dist/server.js'], {
+    const child = spawn('node', ['../dist/server.js'], {
       stdio: ['pipe', 'pipe', 'pipe']
     });
 

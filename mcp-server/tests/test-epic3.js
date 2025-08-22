@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-import { RenderService } from './src/services/render-service.ts';
-import { RemotionService } from './src/services/remotion-service.ts';
+import { RenderService } from '../src/services/render-service.ts';
+import { RemotionService } from '../src/services/remotion-service.ts';
 
 async function testEpic3() {
   console.log('🎬 Testing Epic 3: Render Operations (Direct Test)\n');
 
-  const renderService = new RenderService('../');
-  const remotionService = new RemotionService('../');
+  const renderService = new RenderService('../../');
+  const remotionService = new RemotionService('../../');
 
   try {
     // Test 1: List compositions (prerequisite)

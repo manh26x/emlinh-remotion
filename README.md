@@ -49,7 +49,7 @@ emlinh-remotion/
 │   │   ├── lipSync/             # Lip-sync logic
 │   │   └── useBlinkLogic.ts     # Blink animation
 │   └── utils/                    # Utilities
-├── mcp-server/                   # MCP Server package
+├── ../mcp-server/                   # MCP Server package
 │   ├── src/
 │   │   ├── handlers/            # MCP protocol handlers
 │   │   ├── services/            # Business logic
@@ -89,7 +89,7 @@ cd emlinh-remotion
 npm install
 
 # Install MCP server dependencies
-cd mcp-server
+cd ../mcp-server
 npm install
 cd ..
 ```
@@ -97,10 +97,10 @@ cd ..
 3. **Setup environment:**
 ```bash
 # Copy MCP server environment template
-cp mcp-server/env.example mcp-server/.env
+cp ../mcp-server/env.example ../mcp-server/.env
 
 # Edit environment variables
-nano mcp-server/.env
+nano ../mcp-server/.env
 ```
 
 ### Environment Configuration
@@ -108,7 +108,7 @@ nano mcp-server/.env
 **MCP Server (.env):**
 ```bash
 # MCP Server Configuration
-REMOTION_PROJECT_PATH=../src
+REMOTION_PROJECT_PATH=.
 LOG_LEVEL=info
 PORT=3001
 
@@ -146,7 +146,7 @@ npx remotion render src/Root.tsx output.mp4
 
 ```bash
 # Navigate to MCP server
-cd mcp-server
+cd ../mcp-server
 
 # Development mode
 npm run dev
@@ -191,7 +191,7 @@ npm run build
   "mcpServers": {
     "remotion": {
       "command": "node",
-      "args": ["path/to/emlinh-remotion/mcp-server/dist/server.js"]
+      "args": ["../mcp-server/dist/server.js"]
     }
   }
 }
@@ -267,7 +267,7 @@ npm test           # Run tests
 
 ### MCP Server
 ```bash
-cd mcp-server
+cd ../mcp-server
 npm run dev        # Development mode
 npm run build      # Build for production
 npm start          # Start production server

@@ -2,7 +2,7 @@
   "mcpServers": {
     "emlinh-remotion": {
       "command": "node",
-      "args": ["mcp-server/dist/server.js"],
+      "args": ["../mcp-server/dist/server.js"],
       "env": {
         "NODE_ENV": "development",
         "LOG_LEVEL": "info"

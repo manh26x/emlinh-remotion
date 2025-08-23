@@ -14,7 +14,7 @@ Hướng dẫn này sẽ giúp bạn thiết lập Emlinh Remotion MCP Server đ
 
 ```bash
 # Cài đặt dependencies cho MCP server
-cd mcp-server
+cd ../mcp-server
 npm install
 
 # Build server
@@ -30,7 +30,7 @@ npm run build
 3. **Thêm MCP Server mới:**
    - **Name:** `emlinh-remotion`
    - **Command:** `node`
-   - **Arguments:** `[path-to-project]/mcp-server/dist/server.js`
+   - **Arguments:** `[path-to-project]/../mcp-server/dist/server.js`
    - **Working Directory:** `[path-to-project]`
 
 ### Option B: Claude Web (nếu hỗ trợ)

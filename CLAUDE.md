@@ -39,7 +39,7 @@ npm run lint           # Chạy eslint + tsc
 
 ### Phát triển MCP Server
 ```bash
-cd mcp-server
+cd ../mcp-server
 
 # Chế độ phát triển với hot reload
 npm run dev
@@ -65,10 +65,10 @@ npm run type-check
 ```bash
 # Thiết lập ban đầu
 npm install
-cd mcp-server && npm install && cd ..
+cd ../mcp-server && npm install && cd ..
 
 # Thiết lập phát triển
-cd mcp-server
+cd ../mcp-server
 cp env.example .env     # Cấu hình môi trường
 npm run build          # Build MCP server
 npm run dev            # Khởi động ở chế độ dev
@@ -91,7 +91,7 @@ Hệ thống tạo video được xây dựng xung quanh:
 MCP server tuân theo thiết kế stateless, modular:
 
 ```
-mcp-server/src/
+../mcp-server/src/
 ├── server.ts              # Entry point chính & xử lý giao thức MCP
 ├── handlers/              # Handlers giao thức MCP & triển khai tools
 ├── services/              # Logic nghiệp vụ (tích hợp Remotion, quản lý process)
@@ -130,9 +130,9 @@ Các tham số phổ biến cho render video:
 - `format`: Định dạng đầu ra (mp4, webm, gif)
 
 ### Cấu hình môi trường
-MCP server yêu cầu các biến môi trường này (trong `mcp-server/.env`):
+MCP server yêu cầu các biến môi trường này (trong `../mcp-server/.env`):
 ```bash
-REMOTION_PROJECT_PATH=../src
+REMOTION_PROJECT_PATH=../emlinh-remotion
 LOG_LEVEL=info
 PORT=3001
 REMOTION_OUTPUT_DIR=./output
@@ -166,7 +166,7 @@ Trước khi commit thay đổi, luôn chạy:
 npm run lint           # ESLint + TypeScript check
 
 # MCP server
-cd mcp-server
+cd ../mcp-server
 npm run lint           # ESLint
 npm run type-check     # Kiểm tra biên dịch TypeScript
 npm test              # Unit tests

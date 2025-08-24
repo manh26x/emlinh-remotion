@@ -2,10 +2,13 @@
   "mcpServers": {
     "emlinh-remotion": {
       "command": "node",
-      "args": ["../mcp-server/dist/server.js"],
+      "args": ["C:/Users/Admin/Projects/video-generator-mcp/mcp-server/dist/server.js"],
       "env": {
         "NODE_ENV": "development",
-        "LOG_LEVEL": "info"
+        "LOG_LEVEL": "info",
+        "REMOTION_PROJECT_PATH": "C:/Users/Admin/Projects/video-generator-mcp/emlinh-remotion",
+        "REMOTION_OUTPUT_DIR": "C:/Users/Admin/Projects/video-generator-mcp/output",
+        "REMOTION_CACHE_DIR": "C:/Users/Admin/Projects/video-generator-mcp/cache"
       }
     }
   }

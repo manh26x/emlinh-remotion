@@ -1,6 +1,6 @@
 import { Composition, CalculateMetadataFunction } from "remotion"; // Thêm CalculateMetadataFunction
 import { z } from "zod";
-import { Scene } from "./Scene";
+import { Main } from "./Main";
 
 // Welcome to the Remotion Three Starter Kit!
 // Two compositions have been created, showing how to use
@@ -19,7 +19,7 @@ import { Scene } from "./Scene";
 
 // Định nghĩa schema ở đây, bên ngoài component
 export const myCompSchema = z.object({
-  durationInSeconds: z.number().min(1).default(10),
+  durationInSeconds: z.number().min(1).default(20),
   backgroundScene: z.enum(["office", "abstract", "none"]).default("none"),
   audioFileName: z.string().default("None"), // Thay đổi từ enum sang string để cho phép tên file động
   mouthCuesUrl: z.string().optional(), // Thêm mouthCuesUrl cho lip-sync data

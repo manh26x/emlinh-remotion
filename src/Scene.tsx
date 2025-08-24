@@ -1,12 +1,13 @@
 import { ThreeCanvas } from "@remotion/three";
 import React, { Suspense } from 'react'; 
-import { AbsoluteFill, useVideoConfig, Audio, staticFile } from "remotion"; 
+import { AbsoluteFill, useVideoConfig, Audio, staticFile, useCurrentFrame, interpolate } from "remotion"; 
 import { PerspectiveCamera } from "@react-three/drei"; 
 
 // import AudioManager from './utils/AudioManager'; // Unused for now 
 
 import { OfficeBackground } from './backgrounds/OfficeBackground';
 import { AbstractBackground } from './backgrounds/AbstractBackground';
+import { FloatingParticles } from './effects/FloatingParticles';
 import { Avatar } from './Avatar.jsx';
 import { useGLTF } from '@react-three/drei';
 import { z } from 'zod';
@@ -33,7 +34,8 @@ export const Scene: React.FC<SceneProps> = ({
   audioFileName,
   mouthCuesUrl,
 }) => {
-  const { width, height } = useVideoConfig();
+  const { width, height, durationInFrames } = useVideoConfig();
+  const frame = useCurrentFrame();
   const aspectRatio = width / height;
 
   let cameraFovValue = cameraFov;
@@ -76,7 +78,7 @@ export const Scene: React.FC<SceneProps> = ({
             fov={cameraFovValue}
             near={0.1}
             far={1000}
-            position={cameraPositionValue}
+            position={[cameraPositionValue[0], cameraPositionValue[1], interpolate(frame, [0, durationInFrames], [cameraPositionValue[2], cameraPositionValue[2] - 0.5])]}
           />
           
           <ambientLight intensity={4} color={0xffffff} />
@@ -92,9 +94,9 @@ export const Scene: React.FC<SceneProps> = ({
             intensity={3.5} 
             color={0xffffff} 
           />
+          <FloatingParticles count={200} size={0.05} />
           
-          {backgroundScene === 'office' && <OfficeBackground />}
-          {backgroundScene === 'abstract' && <AbstractBackground />}
+          {backgroundScene === 'abstract' ? < AbstractBackground /> : <OfficeBackground />}
           
           <group 
             position={avatarPositionValue} 

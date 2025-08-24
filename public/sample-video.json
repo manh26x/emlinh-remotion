@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "1.0",
+  "meta": {
+    "title": "Benefits of Reading Books",
+    "fps": 30,
+    "width": 1080,
+    "height": 1920,
+    "stylePreset": "clean"
+  },
+  "audio": {},
+  "scenes": [
+    {
+      "id": "scene-1",
+      "durationInFrames": 150,
+      "transitionIn": { "name": "fade", "durationInFrames": 15 },
+      "elements": [
+        {
+          "type": "background",
+          "props": {
+            "src": "https://images.pexels.com/photos/1290141/pexels-photo-1290141.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+            "fit": "cover",
+            "animation": { "enter": { "name": "kenBurns", "durationInFrames": 120, "easing": "ease-in-out" } }
+          }
+        },
+        {
+          "type": "label",
+          "props": {
+            "text": "Expand Your Knowledge",
+            "style": { "color": "white", "fontSize": "80px", "fontWeight": "bold" },
+            "position": { "x": "50%", "y": "40%" },
+            "animation": { "enter": { "name": "slideInUp", "durationInFrames": 20, "delay": 10, "easing": "ease-out" } }
+          }
+        },
+        {
+          "type": "character",
+          "props": {
+            "model": "/models/character.glb"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene-2",
+      "durationInFrames": 120,
+      "transitionIn": { "name": "slideLeft", "durationInFrames": 20 },
+      "elements": [
+        {
+          "type": "background",
+          "props": {
+            "src": "https://images.pexels.com/photos/3747463/pexels-photo-3747463.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+            "fit": "cover",
+            "animation": { "enter": { "name": "fadeIn", "durationInFrames": 30 } }
+          }
+        },
+        {
+          "type": "label",
+          "props": {
+            "text": "Improve Focus",
+            "style": { "color": "white", "fontSize": "80px", "fontWeight": "bold" },
+            "position": { "x": "50%", "y": "50%" },
+            "animation": { "enter": { "name": "fadeIn", "durationInFrames": 30 } }
+          }
+        }
+      ]
+    }
+  ]
+}

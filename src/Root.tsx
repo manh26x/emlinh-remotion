@@ -1,89 +1,66 @@
-import { Composition, CalculateMetadataFunction } from "remotion"; // Thêm CalculateMetadataFunction
-import { z } from "zod";
-import { Main } from "./Main";
+import { Composition, CalculateMetadataFunction } from 'remotion';
+import { z } from 'zod';
+import { VideoContainer } from './VideoContainer';
+import { scriptV1Schema, Scene } from './schemas/scriptV1.schema';
 
-// Welcome to the Remotion Three Starter Kit!
-// Two compositions have been created, showing how to use
-// the `ThreeCanvas` component and the `useVideoTexture` hook.
-
-// You can play around with the example or delete everything inside the canvas.
-
-// Remotion Docs:
-// https://remotion.dev/docs
-
-// @remotion/three Docs:
-// https://remotion.dev/docs/three
-
-// React Three Fiber Docs:
-// https://docs.pmnd.rs/react-three-fiber/getting-started/introduction
-
-// Định nghĩa schema ở đây, bên ngoài component
-export const myCompSchema = z.object({
-  durationInSeconds: z.number().min(1).default(20),
-  backgroundScene: z.enum(["office", "abstract", "none"]).default("none"),
-  audioFileName: z.string().default("None"), // Thay đổi từ enum sang string để cho phép tên file động
-  mouthCuesUrl: z.string().optional(), // Thêm mouthCuesUrl cho lip-sync data
-  cameraFov: z.number().default(30),
-  cameraPosition: z.tuple([z.number(), z.number(), z.number()]).default([0, 0.7, 4.5]),
+// Schema for the composition's props. It expects the full script.
+export const compSchema = z.object({
+  script: scriptV1Schema.optional(),
 });
 
-// Lấy giá trị mặc định từ schema để tính durationInFrames
-const defaultValues = myCompSchema.parse({}); // Parse với object rỗng để lấy defaults
-const defaultDurationInSeconds = defaultValues.durationInSeconds;
-const DURATION_IN_FRAMES_DEFAULT = defaultDurationInSeconds * 30; // Giả sử fps = 30 (khớp với fps của Composition)
+export const calculateDynamicVideoMetadata: CalculateMetadataFunction<
+  z.infer<typeof compSchema>
+> = async ({ props }) => {
+  // In Node.js, we can read the file and calculate the metadata
+  if (typeof window === 'undefined') {
+    try {
+      const { getVideoScript } = require('./get-video-script');
+      const script = getVideoScript();
+      const durationInFrames = script.scenes.reduce(
+        (acc: number, scene: Scene) => acc + scene.durationInFrames,
+        0
+      );
+      return {
+        durationInFrames,
+        width: script.meta.width,
+        height: script.meta.height,
+        fps: script.meta.fps,
+        props: { ...props, script },
+      };
+    } catch (err) {
+      console.error('Error loading script for metadata:', err);
+    }
+  }
 
-// Hàm để tính toán metadata động
-const calculateSceneMetadata: CalculateMetadataFunction<z.infer<typeof myCompSchema>> = ({ props }) => { // fps không có trong tham số này
-  // props ở đây đã được parse và validate bởi myCompSchema (do schema được cung cấp cho Composition)
-  // và cũng đã bao gồm defaultValues nếu input props không có durationInSeconds.
-  const COMPOSITION_FPS = 30; // Giả định FPS giống như trong Composition
-  const durationInFrames = Math.round(props.durationInSeconds * COMPOSITION_FPS);
+  // In the browser, we can't read the file, so we fetch it.
+  // We return placeholder data initially, and the actual data will be loaded in the component.
   return {
-    durationInFrames,
-    props, // Trả về props đã được validate/resolve
+    durationInFrames: 120, // Placeholder duration
+    width: 1080,
+    height: 1920,
+    fps: 30,
+    props: {
+      ...props,
+      // The script will be fetched in the component
+    },
   };
 };
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {/* Composition cho tỷ lệ 16:9 (Landscape) */}
       <Composition
-        id="Scene-Landscape"
-        component={Scene}
-        durationInFrames={DURATION_IN_FRAMES_DEFAULT}
-        fps={30}
-        width={1920}
-        height={1080}
-        schema={myCompSchema}
-        defaultProps={{
-          backgroundScene: 'none',
-          durationInSeconds: defaultDurationInSeconds,
-          audioFileName: "None", // Giá trị mặc định cho audio là "None"
-          mouthCuesUrl: undefined, // Mặc định không có lip-sync
-          cameraFov: 30,
-          cameraPosition: [0, 0.7, 4.5],
-        }}
-        calculateMetadata={calculateSceneMetadata}
-      />
-      {/* Composition cho tỷ lệ 9:16 (Portrait) */}
-      <Composition
-        id="Scene-Portrait"
-        component={Scene}
-        durationInFrames={DURATION_IN_FRAMES_DEFAULT}
-        fps={30}
+        id="DynamicVideo"
+        component={VideoContainer}
+        calculateMetadata={calculateDynamicVideoMetadata}
+        durationInFrames={120} // Placeholder
         width={1080}
         height={1920}
-        schema={myCompSchema}
+        fps={30}
+        schema={compSchema}
         defaultProps={{
-          backgroundScene: 'none',
-          durationInSeconds: defaultDurationInSeconds,
-          audioFileName: "None", // Giá trị mặc định cho audio là "None"
-          mouthCuesUrl: undefined, // Mặc định không có lip-sync
-          cameraFov: 30,
-          cameraPosition: [0, 0.7, 4.5],
+          // No default script needed, it will be fetched
         }}
-        calculateMetadata={calculateSceneMetadata}
       />
     </>
   );

@@ -3,13 +3,20 @@
     "target": "ES2018",
     "module": "commonjs",
     "jsx": "react-jsx",
+    "allowJs": true,
     "strict": true,
     "noEmit": true,
     "lib": ["es2020", "dom"],
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noUnusedLocals": true
+    "resolveJsonModule": true,
+    "noUnusedLocals": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
-  "exclude": []
+  "include": ["src", "remotion.config.ts"],
+  "exclude": ["node_modules"]
 }

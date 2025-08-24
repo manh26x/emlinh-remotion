@@ -28,17 +28,7 @@ export function Avatar({
   const { ...restProps } = props;
   const group = useRef();
 
-  // Load model - simplified without delayRender
-  let nodes, materials, animations;
-  try {
-    const gltfData = useGLTF(modelUrl);
-    nodes = gltfData.nodes;
-    materials = gltfData.materials;
-    animations = gltfData.animations;
-  } catch (error) {
-    console.error(AVATAR_LOG_PREFIX, `Error loading GLTF model:`, error);
-    return null;
-  }
+  const { nodes, materials, animations } = useGLTF(modelUrl);
   
   const { actions } = useAnimations(animations, group);
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Test script for ChatGPT TTS + Rhubarb Lip-sync Integration
- * Tests the complete pipeline: TTS -> Audio Conversion -> Lip-sync -> Video Rendering
+ * Test script for Audio + Rhubarb Lip-sync Integration
+ * Tests the complete pipeline: Audio Processing -> Audio Conversion -> Lip-sync -> Video Rendering
  */
 
 import { spawn } from 'child_process';
@@ -12,7 +12,7 @@ import fs from 'fs/promises';
 const MCP_SERVER_PATH = path.join(process.cwd(), 'mcp-server', 'dist', 'server.js');
 const TEST_AUDIO_PATH = path.join(process.cwd(), 'public', 'audios', 'test-audio.wav');
 
-console.log('🎬 Testing ChatGPT TTS + Rhubarb Lip-sync Integration Pipeline\n');
+console.log('🎬 Testing Audio + Rhubarb Lip-sync Integration Pipeline\n');
 
 async function testMCPTool(toolName, args) {
   return new Promise((resolve, reject) => {
@@ -114,17 +114,16 @@ async function testLipSyncPipeline() {
     console.log('❌ Failed to list MCP tools:', error.message);
   }
 
-  // Test 2: Generate TTS Audio
-  console.log('\n🎤 Test 2: Generate TTS Audio');
+  // Test 2: Load Audio File
+  console.log('\n🎵 Test 2: Load Audio File');
   try {
-    const result = await testMCPTool('generate_tts_audio', {
-      text: 'Hello, this is a test for lip-sync integration.',
-      voice: 'alloy',
-      model: 'tts-1'
+    const result = await testMCPTool('load_audio_file', {
+      source: TEST_AUDIO_PATH,
+      format: 'wav'
     });
-    console.log('✅ TTS Audio generation test completed');
+    console.log('✅ Audio file loading test completed');
   } catch (error) {
-    console.log('❌ TTS Audio generation failed:', error.message);
+    console.log('❌ Audio file loading failed:', error.message);
   }
 
   // Test 3: Audio Format Conversion
@@ -186,7 +185,7 @@ async function main() {
   console.log('2. Create sample audio files for testing');
   console.log('3. Test with real audio → video pipeline');
   console.log('');
-  console.log('🎉 ChatGPT TTS + Rhubarb Lip-sync Integration COMPLETED!');
+  console.log('🎉 Audio + Rhubarb Lip-sync Integration COMPLETED!');
 }
 
 main().catch(console.error);

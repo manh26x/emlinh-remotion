@@ -15,6 +15,8 @@ interface AvatarCustomProps extends GroupProps {
   blinkIntervalFrames?: number;
   blinkDurationFrames?: number;
   eyeMorphTargetNames?: { left: string; right: string };
+  scale?: number;
+  position?: number[];
   // onModelLoaded?: () => void; 
   // ví dụ: animationName?: string;
 }

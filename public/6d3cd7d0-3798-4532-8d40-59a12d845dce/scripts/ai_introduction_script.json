@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "title": "Giới thiệu về Công nghệ AI",
+    "fps": 30,
+    "width": 1920,
+    "height": 1080,
+    "stylePreset": "modern"
+  },
+  "audio": {
+    "voiceover": {
+      "url": "http://example.com/voiceover.mp3",
+      "captions": [
+        {
+          "t": 0,
+          "d": 5,
+          "text": "Xin chào, tôi là Claude."
+        },
+        {
+          "t": 5,
+          "d": 5,
+          "text": "Hôm nay chúng ta sẽ cùng nhau tạo ra một video tuyệt vời với công nghệ AI hiện đại."
+        },
+        {
+          "t": 10,
+          "d": 5,
+          "text": "Video này sẽ giới thiệu về khả năng tạo nội dung tự động."
+        },
+        {
+          "t": 15,
+          "d": 5,
+          "text": "Và cách mà trí tuệ nhân tạo có thể hỗ trợ chúng ta trong việc sản xuất media."
+        }
+      ]
+    },
+    "music": {
+      "url": "http://example.com/background-music.mp3",
+      "gainDb": -5,
+      "duckingOnVoiceover": true
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene1",
+      "duration": 20,
+      "elements": [
+        {
+          "type": "text",
+          "content": "Công nghệ AI",
+          "style": {
+            "color": "#FF5733",
+            "fontSize": "48px"
+          },
+          "position": {
+            "x": "center",
+            "y": "top"
+          }
+        },
+        {
+          "type": "background",
+          "url": "http://example.com/tech-background.jpg"
+        },
+        {
+          "type": "animation",
+          "content": "smooth transition"
+        }
+      ]
+    }
+  ]
+}

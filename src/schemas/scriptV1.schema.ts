@@ -86,6 +86,7 @@ export const scriptV1Schema = z.object({
   audio: z.object({
     voiceover: z.object({
       url: z.string(),
+      lipSyncFile: z.string().optional(),
       captions: z.array(captionSchema),
     }).optional(),
     music: z.object({

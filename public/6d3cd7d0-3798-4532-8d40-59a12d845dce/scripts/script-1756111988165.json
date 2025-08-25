@@ -1,0 +1,59 @@
+{
+  "meta": {
+    "title": "A Day in Nature",
+    "fps": 30,
+    "width": 1080,
+    "height": 1920,
+    "stylePreset": "nature"
+  },
+  "audio": {
+    "voiceover": {
+      "url": "https://example.com/voiceover.mp3",
+      "captions": [
+        {
+          "t": 0,
+          "d": 2,
+          "text": "Welcome to a beautiful day in nature."
+        },
+        {
+          "t": 2,
+          "d": 2,
+          "text": "Let's explore the wonders around us."
+        }
+      ]
+    },
+    "music": {
+      "url": "https://example.com/background-music.mp3",
+      "gainDb": -5,
+      "duckingOnVoiceover": true
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene1",
+      "duration": 5,
+      "elements": [
+        {
+          "type": "video",
+          "url": "https://example.com/nature-clip1.mp4",
+          "start": 0,
+          "end": 5
+        }
+      ]
+    },
+    {
+      "id": "scene2",
+      "duration": 5,
+      "transitionIn": "fade",
+      "elements": [
+        {
+          "type": "video",
+          "url": "https://example.com/nature-clip2.mp4",
+          "start": 0,
+          "end": 5
+        }
+      ]
+    }
+  ],
+  "schemaVersion": "1.0"
+}

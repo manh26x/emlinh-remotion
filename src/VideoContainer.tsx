@@ -75,9 +75,26 @@ export const VideoContainer: React.FC<VideoContainerProps> = ({ script: initialS
       {music && <Audio src={staticFile(music.url)} volume={musicVolume} />}
 
       {script.scenes.map((scene: SceneType) => {
+        // Inject lipSyncFile from audio.voiceover into character elements
+        const enhancedScene = {
+          ...scene,
+          elements: scene.elements.map(element => {
+            if (element.type === 'character' && voiceover?.lipSyncFile) {
+              return {
+                ...element,
+                props: {
+                  ...element.props,
+                  lipSyncFile: element.props.lipSyncFile || voiceover.lipSyncFile
+                }
+              };
+            }
+            return element;
+          })
+        };
+        
         const sequence = (
           <Sequence key={scene.id} from={fromFrame} durationInFrames={scene.durationInFrames}>
-            <ScenePlayer scene={scene} />
+            <ScenePlayer scene={enhancedScene} />
           </Sequence>
         );
         fromFrame += scene.durationInFrames;

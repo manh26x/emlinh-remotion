@@ -19,9 +19,9 @@ export const ScenePlayer: React.FC<ScenePlayerProps> = ({ scene }) => {
   const isPortrait = aspectRatio < 1;
   
   // Điều chỉnh camera và avatar position dựa trên aspect ratio
-  const cameraDistance = isPortrait ? 6 : 8;
-  const avatarYPosition = isPortrait ? -1.8 : -2.5;
-  const avatarScale = isPortrait ? 2.2 : 2.5;
+  const cameraDistance = isPortrait ? 3 : 8;
+  const avatarYPosition = isPortrait ? -4 : -3.5;
+  const avatarScale = isPortrait ? 2.5 : 2.5;
   const cameraFov = isPortrait ? 35 : 30;
 
   return (
@@ -64,7 +64,7 @@ export const ScenePlayer: React.FC<ScenePlayerProps> = ({ scene }) => {
                     key={key}
                     modelUrl={staticFile(element.props.model)}
                     mouthCuesUrl={element.props.lipSyncFile ? staticFile(element.props.lipSyncFile) : undefined}
-                    position={[0, avatarYPosition, 0]} // Căn chỉnh responsive
+                    position={[-0.1, avatarYPosition, 0]} // Căn chỉnh responsive
                     scale={avatarScale} // Scale responsive
                   />
                 </Suspense>

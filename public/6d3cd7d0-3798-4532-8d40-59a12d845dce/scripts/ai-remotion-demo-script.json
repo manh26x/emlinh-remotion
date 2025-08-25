@@ -1,0 +1,71 @@
+{
+  "meta": {
+    "title": "AI and Remotion Demo",
+    "fps": 30,
+    "width": 1080,
+    "height": 1920,
+    "stylePreset": "gradient"
+  },
+  "audio": {
+    "voiceover": {
+      "url": "http://example.com/audio/nova_tts.mp3",
+      "captions": [
+        {
+          "t": 0,
+          "d": 3,
+          "text": "Xin chào!"
+        },
+        {
+          "t": 3,
+          "d": 6,
+          "text": "Đây là một video demo được tạo bằng Remotion."
+        },
+        {
+          "t": 6,
+          "d": 9,
+          "text": "Chúng ta sẽ khám phá cách tạo video với công nghệ AI hiện đại."
+        }
+      ]
+    },
+    "music": {
+      "url": "http://example.com/music/background.mp3",
+      "gainDb": -5,
+      "duckingOnVoiceover": true
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene1",
+      "duration": 9,
+      "elements": [
+        {
+          "type": "background",
+          "style": {
+            "gradient": true
+          }
+        },
+        {
+          "type": "text",
+          "content": "Xin chào!",
+          "animation": "fadeIn",
+          "start": 0,
+          "duration": 3
+        },
+        {
+          "type": "text",
+          "content": "Đây là một video demo được tạo bằng Remotion.",
+          "animation": "fadeIn",
+          "start": 3,
+          "duration": 6
+        },
+        {
+          "type": "text",
+          "content": "Chúng ta sẽ khám phá cách tạo video với công nghệ AI hiện đại.",
+          "animation": "fadeIn",
+          "start": 6,
+          "duration": 9
+        }
+      ]
+    }
+  ]
+}

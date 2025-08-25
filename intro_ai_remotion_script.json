@@ -1,0 +1,87 @@
+{
+  "meta": {
+    "title": "Giới thiệu về AI và Remotion",
+    "fps": 30,
+    "width": 1080,
+    "height": 1920,
+    "stylePreset": "gradient"
+  },
+  "audio": {
+    "voiceover": {
+      "url": "audios/0f3345eb-f047-4423-b2e9-df01f29aab27.wav",
+      "lipSyncFile": "audios/0f3345eb-f047-4423-b2e9-df01f29aab27_lipsync.json",
+      "captions": []
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene1",
+      "duration": 5,
+      "transitionIn": "fade",
+      "elements": [
+        {
+          "type": "text",
+          "content": "Khám Phá Công Nghệ AI",
+          "animation": "slideIn",
+          "position": "center"
+        },
+        {
+          "type": "character",
+          "props": {
+            "model": "models/character.glb"
+          }
+        },
+        {
+          "type": "background",
+          "style": "gradient",
+          "colors": [
+            "#4A90E2",
+            "#9013FE"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scene2",
+      "duration": 5,
+      "transitionIn": "slide",
+      "elements": [
+        {
+          "type": "text",
+          "content": "Remotion - Nền Tảng Đột Phá",
+          "animation": "zoomIn",
+          "position": "center"
+        },
+        {
+          "type": "background",
+          "style": "gradient",
+          "colors": [
+            "#F5A623",
+            "#F8E71C"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scene3",
+      "duration": 5,
+      "transitionIn": "fade",
+      "elements": [
+        {
+          "type": "text",
+          "content": "Khám Phá Thế Giới Mới Với AI",
+          "animation": "fadeIn",
+          "position": "center"
+        },
+        {
+          "type": "background",
+          "style": "gradient",
+          "colors": [
+            "#50E3C2",
+            "#B8E986"
+          ]
+        }
+      ]
+    }
+  ]
+}

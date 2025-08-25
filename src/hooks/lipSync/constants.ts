@@ -71,29 +71,29 @@ export const INTERMEDIATE_VISEME_MAP: Record<string, string> = {
 
 // Tùy chọn mặc định cho LipSync - Giờ đây sẽ implement LipSyncOptions
 export const DEFAULT_LIPSYNC_OPTIONS: Required<Omit<LipSyncOptions, 'springConfig'>> & { springConfig: Partial<SpringConfig> } = {
-  // Mặc định từ useRemotionLipSync
+  // Mặc định từ useRemotionLipSync - điều chỉnh cho mềm mại hơn
   audioOffset: -0.12,
-  visemeOpeningDuration: 0.08,
+  visemeOpeningDuration: 0.15, // Tăng từ 0.08 để chuyển động chậm hơn
   
-  // Mặc định từ tệp gốc
-  morphTargetSmoothing: 0.001,
-  intensityFactor: 1,
-  expressiveness: 0.5,
+  // Mặc định từ tệp gốc - điều chỉnh cho mềm mại hơn
+  morphTargetSmoothing: 0.005, // Tăng từ 0.001 để smooth hơn
+  intensityFactor: 0.7, // Giảm từ 1 để chuyển động nhẹ nhàng hơn
+  expressiveness: 0.6, // Tăng từ 0.5 để biểu cảm tự nhiên hơn
   noiseThreshold: 5,
-  neutralIntensity: 0.025,
-  transitionDuration: 0.05,
-  blendFactor: 0.035,
-  teethFactor: 0.9, // Hợp nhất giá trị
-  interpolationSteps: 3,
+  neutralIntensity: 0.035, // Tăng từ 0.025 để có độ mở miệng tự nhiên hơn
+  transitionDuration: 0.12, // Tăng từ 0.05 để chuyển đổi mềm mại hơn
+  blendFactor: 0.055, // Tăng từ 0.035 để blend mềm mại hơn
+  teethFactor: 0.6, // Giảm từ 0.9 để chuyển động răng nhẹ nhàng hơn
+  interpolationSteps: 5, // Tăng từ 3 để smooth hơn
   microMovements: true,
-  preVisemeBlend: 0.15,
+  preVisemeBlend: 0.2, // Tăng từ 0.15 để blend trước mềm mại hơn
   vietnameseMode: true,
   
-  // Cấu hình spring mặc định
+  // Cấu hình spring mặc định - điều chỉnh cho mềm mại hơn
   springConfig: {
-    stiffness: 100,
-    damping: 16,
-    mass: 0.2,
+    stiffness: 60, // Giảm từ 100 để ít cứng hơn
+    damping: 25, // Tăng từ 16 để giảm dao động
+    mass: 0.4, // Tăng từ 0.2 để chuyển động chậm hơn
   },
 };
 

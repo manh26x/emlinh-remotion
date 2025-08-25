@@ -94,20 +94,20 @@ export function Avatar({
   const { fps } = useVideoConfig();
 
   useEffect(() => {
-    const sittingAction = actions?.Sitting;
-    if (sittingAction) {
-      sittingAction.play();
-      sittingAction.paused = true;
+    const standingIdle = actions['Standing Idle'];
+    if (standingIdle) {
+      standingIdle.play();
+      standingIdle.paused = true;
     }
   }, [actions]);
 
   useEffect(() => {
-    const sittingAction = actions && actions['Sitting'];
-    if (sittingAction && sittingAction.getClip()) { 
-      const clipDuration = sittingAction.getClip().duration;
+    const standingIdle = actions && actions['Standing Idle'];
+    if (standingIdle && standingIdle.getClip()) { 
+      const clipDuration = standingIdle.getClip().duration;
       if (fps > 0 && clipDuration > 0) {
         const animationTime = (currentFrame / fps) % clipDuration;
-        sittingAction.time = animationTime;
+        standingIdle.time = animationTime;
       }
     }
   }, [currentFrame, fps, actions]);

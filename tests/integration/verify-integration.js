@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Quick verification script for ChatGPT TTS + Rhubarb Lip-sync Integration
+ * Quick verification script for Audio + Rhubarb Lip-sync Integration
  */
 
 import fs from 'fs/promises';
@@ -24,7 +24,7 @@ const COMPONENTS = [
 ];
 
 async function verifyIntegration() {
-  console.log('🔍 Verifying ChatGPT TTS + Rhubarb Lip-sync Integration\n');
+  console.log('🔍 Verifying Audio + Rhubarb Lip-sync Integration\n');
   
   let allPresent = true;
   
@@ -72,9 +72,9 @@ async function verifyIntegration() {
   console.log('\n📊 Integration Status:');
   if (allPresent) {
     console.log('🎉 ALL COMPONENTS INTEGRATED SUCCESSFULLY!');
-    console.log('\n✨ ChatGPT TTS + Rhubarb Lip-sync Integration COMPLETED');
+    console.log('\n✨ Audio + Rhubarb Lip-sync Integration COMPLETED');
     console.log('\n🔧 Pipeline Components:');
-    console.log('1. 🎤 TTS Audio Generation (OpenAI)');
+    console.log('1. 🎵 Audio File Processing');
     console.log('2. 🔄 Audio Format Conversion (WAV → OGG)');
     console.log('3. 👄 Lip-sync Data Generation (Rhubarb CLI)');
     console.log('4. 🎬 Video Rendering with Lip-sync Animation');

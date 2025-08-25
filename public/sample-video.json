@@ -7,7 +7,13 @@
     "height": 1920,
     "stylePreset": "clean"
   },
-  "audio": {},
+  "audio": {
+     "voiceover": {
+      "url": "6d3cd7d0-3798-4532-8d40-59a12d845dce/audios/d24b549b-70f9-471e-98fe-61e347adf743.wav",
+      "lipSyncFile": "6d3cd7d0-3798-4532-8d40-59a12d845dce/audios/d24b549b-70f9-471e-98fe-61e347adf74.json",
+      "captions": []
+    }
+  },
   "scenes": [
     {
       "id": "scene-1",
